@@ -83,7 +83,7 @@ export default function ClothingListPage() {
     };
 
     return (
-        <>
+        <div className="px-2">
             <Tabs defaultValue="my-wardrobe">
                 <TabsList>
                     <TabsTrigger value="my-wardrobe">My Wardrobe</TabsTrigger>
@@ -110,6 +110,6 @@ export default function ClothingListPage() {
                 onClose={() => setEditing(null)}
                 onSave={handleEditSave}
             />
-        </>
+        </div>
     );
 }

@@ -89,7 +89,7 @@ export default function StylesPage() {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 px-2">
             <div className="flex justify-between">
                 <div>
                     <h2 className="text-lg font-semibold">Styles</h2>

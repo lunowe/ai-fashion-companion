@@ -6,7 +6,7 @@ pydantic
 python-dotenv
 openai
 google-genai
-passlib[bcrypt]
+bcrypt
 python-jose[cryptography]
 python-multipart
 boto3

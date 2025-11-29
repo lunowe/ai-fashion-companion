@@ -1,25 +1,42 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from config import settings
 from models.user import TokenData, UserResponse
 from database import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/token")
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verifies a plain password against the stored bcrypt hash.
+    Bcrypt requires bytes, so we encode the strings.
+    """
+    # Convert the plain password to bytes
+    password_byte_enc = plain_password.encode('utf-8')
+    
+    # Convert the stored hash to bytes (if it's stored as a string in Mongo)
+    hashed_password_byte_enc = hashed_password.encode('utf-8')
+    
+    # Check the password
+    return bcrypt.checkpw(password_byte_enc, hashed_password_byte_enc)
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    """
+    Hashes a password using bcrypt.
+    Returns a string for storage in MongoDB.
+    """
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed_bytes = bcrypt.hashpw(pwd_bytes, salt)
+    
+    # Decode to utf-8 string for database storage
+    return hashed_bytes.decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

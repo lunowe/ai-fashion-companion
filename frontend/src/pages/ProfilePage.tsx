@@ -65,7 +65,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500 px-2">
             <div className="space-y-2">
                 <h1 className="text-3xl font-bold">Your Style Profile</h1>
                 <p className="text-muted-foreground">
