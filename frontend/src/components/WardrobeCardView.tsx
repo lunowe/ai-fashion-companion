@@ -79,6 +79,7 @@ interface WardrobeCardViewProps {
 export default function WardrobeCardView({ items, onEdit, onDelete, isLoading }: WardrobeCardViewProps) {
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [gridCols, setGridCols] = useState<1 | 2 | 3>(2);
 
     // Filter and search logic
     const filteredItems = useMemo(() => {
@@ -118,6 +119,12 @@ export default function WardrobeCardView({ items, onEdit, onDelete, isLoading }:
         return counts;
     }, [items]);
 
+    const gridClass = {
+        1: "grid-cols-1",
+        2: "grid-cols-2",
+        3: "grid-cols-3",
+    }[gridCols];
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-12">
@@ -129,45 +136,95 @@ export default function WardrobeCardView({ items, onEdit, onDelete, isLoading }:
     return (
         <div className="space-y-6 pt-4">
             {/* Header with filters and search */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                {/* Category Pills */}
-                <div className="flex flex-wrap gap-2">
-                    {CATEGORIES.map((cat) => {
-                        const count = categoryCounts[cat.id] || 0;
-                        const isActive = selectedCategory === cat.id;
-                        return (
-                            <button
-                                key={cat.id}
-                                onClick={() => setSelectedCategory(cat.id)}
-                                className={`cursor-pointer flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all ${
-                                    isActive
-                                        ? "bg-primary text-primary-foreground shadow-md"
-                                        : "bg-muted/70 text-secondary-foreground hover:bg-muted"
-                                }`}
-                            >
-                                <span>{cat.icon}</span>
-                                <span>{cat.name}</span>
-                                <span className={`text-xs ${isActive ? "opacity-90" : "opacity-60"}`}>({count})</span>
-                            </button>
-                        );
-                    })}
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    {/* Category Pills */}
+                    <div className="flex flex-wrap gap-2">
+                        {CATEGORIES.map((cat) => {
+                            const count = categoryCounts[cat.id] || 0;
+                            const isActive = selectedCategory === cat.id;
+                            return (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedCategory(cat.id)}
+                                    className={`cursor-pointer flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all ${
+                                        isActive
+                                            ? "bg-primary text-primary-foreground shadow-md"
+                                            : "bg-muted/70 text-secondary-foreground hover:bg-muted"
+                                    }`}
+                                >
+                                    <span>{cat.icon}</span>
+                                    <span>{cat.name}</span>
+                                    <span className={`text-xs ${isActive ? "opacity-90" : "opacity-60"}`}>
+                                        ({count})
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute w-4 h-4 transform -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search wardrobe..."
+                            className="w-full py-2 pl-10 pr-4 text-sm border rounded-lg border-border bg-muted/70 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                    </div>
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative w-full sm:w-64">
-                    <Search className="absolute w-4 h-4 transform -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search wardrobe..."
-                        className="w-full py-2 pl-10 pr-4 text-sm border rounded-lg border-border bg-muted/70 focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                {/* Grid Controls (Mobile Only) */}
+                <div className="flex items-center justify-between sm:hidden">
+                    <span className="text-sm text-muted-foreground">
+                        {filteredItems.length} {filteredItems.length === 1 ? "item" : "items"}
+                    </span>
+                    <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+                        <button
+                            onClick={() => setGridCols(1)}
+                            className={`p-1.5 rounded-md transition-all ${
+                                gridCols === 1
+                                    ? "bg-background shadow-sm"
+                                    : "hover:bg-background/50 text-muted-foreground"
+                            }`}
+                        >
+                            <div className="w-4 h-4 border-2 border-current rounded-[2px]" />
+                        </button>
+                        <button
+                            onClick={() => setGridCols(2)}
+                            className={`p-1.5 rounded-md transition-all ${
+                                gridCols === 2
+                                    ? "bg-background shadow-sm"
+                                    : "hover:bg-background/50 text-muted-foreground"
+                            }`}
+                        >
+                            <div className="flex gap-0.5 w-4 h-4">
+                                <div className="w-full h-full border-2 border-current rounded-[1px]" />
+                                <div className="w-full h-full border-2 border-current rounded-[1px]" />
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setGridCols(3)}
+                            className={`p-1.5 rounded-md transition-all ${
+                                gridCols === 3
+                                    ? "bg-background shadow-sm"
+                                    : "hover:bg-background/50 text-muted-foreground"
+                            }`}
+                        >
+                            <div className="flex gap-0.5 w-4 h-4">
+                                <div className="w-full h-full border-2 border-current rounded-[1px]" />
+                                <div className="w-full h-full border-2 border-current rounded-[1px]" />
+                                <div className="w-full h-full border-2 border-current rounded-[1px]" />
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Results count */}
-            <div className="text-sm text-muted-foreground">
+            {/* Results count (Desktop) */}
+            <div className="hidden sm:block text-sm text-muted-foreground">
                 {filteredItems.length === 0 ? (
                     <span>No items found</span>
                 ) : (
@@ -188,7 +245,7 @@ export default function WardrobeCardView({ items, onEdit, onDelete, isLoading }:
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                <div className={`grid gap-4 ${gridClass} sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`}>
                     {filteredItems.map((item) => (
                         <WardrobeCard
                             key={item._id}
