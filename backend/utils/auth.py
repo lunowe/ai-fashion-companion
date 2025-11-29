@@ -57,9 +57,23 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncIOMotor
         raise credentials_exception
     
     user = await db["users"].find_one({"username": token_data.username})
+    
+    # Self-healing: Ensure last_reset_date exists
+    if user and "last_reset_date" not in user:
+        now = datetime.utcnow()
+        await db["users"].update_one(
+            {"_id": user["_id"]},
+            {"$set": {"last_reset_date": now}}
+        )
+        user["last_reset_date"] = now
+
     return UserResponse(
         id=str(user["_id"]),
         username=user["username"],
         email=user["email"],
-        created_at=user["created_at"]
+        created_at=user["created_at"],
+        role=user.get("role", "free"),
+        generation_count=user.get("generation_count", 0),
+        last_reset_date=user.get("last_reset_date", datetime.utcnow()),
+        api_key=user.get("api_key")
     )

@@ -4,6 +4,7 @@ from typing import List
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 import traceback
+from datetime import datetime
 from utils.auth import get_current_user 
 from models.user import UserResponse
 
@@ -22,6 +23,34 @@ async def generate_outfits(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     user_id = current_user.id
+    
+    # --- LIMIT CHECK & RESET LOGIC ---
+    LIMITS = {
+        "free": 5,
+        "premium": 50,
+        "byok": float("inf")
+    }
+    
+    current_time = datetime.utcnow()
+    last_reset = current_user.last_reset_date
+    
+    # Reset if it's a new day (simple check: different date)
+    if last_reset.date() < current_time.date():
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"generation_count": 0, "last_reset_date": current_time}}
+        )
+        current_user.generation_count = 0
+    
+    user_role = current_user.role
+    limit = LIMITS.get(user_role, 5)
+    
+    if current_user.generation_count >= limit:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Daily generation limit reached for {user_role} tier. Limit: {limit}"
+        )
+    # ---------------------------------
     
     # Get the style
     style = await db.styles.find_one({"_id": ObjectId(outfit_request.style_id)})
@@ -60,11 +89,18 @@ async def generate_outfits(
             exclude_items=outfit_request.exclude_items,
             description=outfit_request.description,
             user_preferences=user_preferences,
-            num_outfits=outfit_request.num_outfits
+            num_outfits=outfit_request.num_outfits,
+            api_key=current_user.api_key if user_role == "byok" else None
         )
         
         if not generated_outfits:
             raise HTTPException(status_code=500, detail="Failed to generate outfits")
+            
+        # Increment generation count
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$inc": {"generation_count": 1}}
+        )
         
         return {"outfits": generated_outfits}
     except Exception as e:

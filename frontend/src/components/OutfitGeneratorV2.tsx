@@ -63,9 +63,10 @@ interface OutfitGeneratorProps {
     wardrobe: ClothingItem[];
     onGenerate: (params: any) => Promise<GeneratedOutfit[]>;
     onSave: (outfit: OutfitCreate) => void;
+    disabled?: boolean;
 }
 
-export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave }: OutfitGeneratorProps) {
+export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave, disabled }: OutfitGeneratorProps) {
     // Step: 1=Config, 2=Loading, 3=Results
     const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -407,7 +408,7 @@ export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave
                                 size="lg"
                                 className="w-full text-lg h-14 shadow-lg hover:shadow-xl transition-all rounded-xl"
                                 onClick={handleGenerate}
-                                disabled={!selectedStyle}
+                                disabled={!selectedStyle || disabled}
                             >
                                 {selectedStyle ? (
                                     <>

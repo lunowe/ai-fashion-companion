@@ -11,9 +11,19 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { toast } from "sonner";
 import OutfitGeneratorV2 from "@/components/OutfitGeneratorV2";
-import OutfitGeneratorV3 from "@/components/OutfitGeneratorV3";
+import { useAuth } from "@/context/AuthContext";
+import { Link } from "react-router-dom";
 
 export default function OutfitGeneratorPage() {
+    const { user } = useAuth();
+    const LIMITS: Record<string, number> = {
+        free: 5,
+        premium: 50,
+        byok: Infinity,
+    };
+    const limit = user ? LIMITS[user.role] || 5 : 5;
+    const isLimitReached = !!(user && limit !== Infinity && user.generation_count >= limit);
+
     const qc = useQueryClient();
     const { data: styles } = useQuery({
         queryKey: ["styles-all"],
@@ -64,11 +74,28 @@ export default function OutfitGeneratorPage() {
 
     return (
         <>
+            {isLimitReached && (
+                <div
+                    className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 rounded shadow-sm"
+                    role="alert"
+                >
+                    <p className="font-bold">Daily Limit Reached</p>
+                    <p>
+                        You have used all {limit} generations for today.
+                        <Link to="/settings" className="underline ml-1 font-semibold hover:text-amber-900">
+                            Upgrade your plan
+                        </Link>{" "}
+                        or wait until tomorrow.
+                    </p>
+                </div>
+            )}
+
             <OutfitGeneratorV2
                 styles={styles || []}
                 wardrobe={wardrobe || []}
                 onGenerate={handleGenerate}
                 onSave={handleSave}
+                disabled={isLimitReached}
             />
             {/* <OutfitGeneratorV3
                 styles={styles || []}

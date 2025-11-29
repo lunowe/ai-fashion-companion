@@ -1,7 +1,7 @@
 import { Outlet, NavLink } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 
-import { Shirt, Stars, Wand2, ListChecks, User } from "lucide-react";
+import { Shirt, Stars, Wand2, ListChecks, User, Settings } from "lucide-react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,10 @@ export default function App() {
                             <NavLink to="/profile" className={linkCls}>
                                 <User className="inline w-4 h-4 my-auto mr-1" />
                                 Profile
+                            </NavLink>
+                            <NavLink to="/settings" className={linkCls}>
+                                <Settings className="inline w-4 h-4 my-auto mr-1" />
+                                Settings
                             </NavLink>
                         </nav>
                         <div className="flex mr-4">

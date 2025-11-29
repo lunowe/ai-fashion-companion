@@ -6,6 +6,10 @@ interface User {
     id: string;
     username: string;
     email: string;
+    role: string;
+    generation_count: number;
+    last_reset_date: string;
+    api_key?: string;
 }
 
 interface AuthContextType {

@@ -8,6 +8,6 @@ COPY ./backend/requirements.txt /code/requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade -r /code/requirements.txt
 
-COPY ./backend /code
+COPY ./backend /code/backend
 
 CMD ["fastapi", "run", "backend/main.py", "--port", "8000"]

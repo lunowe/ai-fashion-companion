@@ -16,7 +16,7 @@ from utils.s3_service import s3_service
 class OutfitGenerator:
     def __init__(self):
         openai.api_key = settings.OPENAI_API_KEY
-        os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_GENAI_API_KEY
+        # os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_GENAI_API_KEY
 
     async def generate_outfits(
         self,
@@ -28,7 +28,8 @@ class OutfitGenerator:
         exclude_items: List[str] = [],
         description: str = None,
         user_preferences: Dict = None,
-        num_outfits: int = 3
+        num_outfits: int = 3,
+        api_key: str = None
     ) -> List[Dict]:
         """
         Generate outfit combinations based on wardrobe items, style, and constraints.
@@ -43,6 +44,7 @@ class OutfitGenerator:
             description: Specific user description/request
             user_preferences: User's style preferences
             num_outfits: Number of outfits to generate
+            api_key: Optional API key for BYOK tier
             
         Returns:
             List of generated outfits with items and reasoning
@@ -71,13 +73,12 @@ class OutfitGenerator:
 
         print(f"Generated prompt for outfit generation:\n{prompt}\n")        
         try:
-            # Call the LLM API
-            # llm = OpenAIResponses(
-            #     model="gpt-5.1",
-            #     reasoning_options={"effort": "low"},
-            # )
+            # Use user's API key if provided (BYOK), otherwise use system key
+            genai_key = api_key if api_key else settings.GOOGLE_GENAI_API_KEY
+            
             llm = GoogleGenAI(
                 model="gemini-3-pro-preview",
+                api_key=genai_key
             )
 
             blocks = []
@@ -291,8 +292,7 @@ class OutfitGenerator:
                     "outfit_name": "Name of the outfit",
                     "items": ["item_id_1", "item_id_2", "item_id_3", ...],
                     "reasoning": "Explanation of why this outfit works"
-                }},
-                ...
+                }}
             ]
         }}
         """

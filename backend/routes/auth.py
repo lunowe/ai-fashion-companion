@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 from models.user import UserCreate, UserResponse, Token, UserInDB
+from bson import ObjectId
+from fastapi import Body
 from utils.auth import get_password_hash, verify_password, create_access_token, create_refresh_token, get_current_user
 from jose import JWTError, jwt
 from config import settings
@@ -61,7 +63,44 @@ async def register(user: UserCreate, request: Request):
         id=str(created_user["_id"]),
         username=created_user["username"],
         email=created_user["email"],
-        created_at=created_user["created_at"]
+        created_at=created_user["created_at"],
+        role=created_user.get("role", "free"),
+        generation_count=created_user.get("generation_count", 0),
+        last_reset_date=created_user.get("last_reset_date", datetime.utcnow()),
+        api_key=created_user.get("api_key")
+    )
+
+@router.put("/users/me/settings", response_model=UserResponse)
+async def update_user_settings(
+    request: Request,
+    settings_update: dict = Body(...),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    update_data = {}
+    if "role" in settings_update:
+        update_data["role"] = settings_update["role"]
+    if "api_key" in settings_update:
+        update_data["api_key"] = settings_update["api_key"]
+        
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No settings provided to update")
+        
+    await request.app.mongodb["users"].update_one(
+        {"_id": ObjectId(current_user.id)},
+        {"$set": update_data}
+    )
+    
+    updated_user = await request.app.mongodb["users"].find_one({"_id": ObjectId(current_user.id)})
+    
+    return UserResponse(
+        id=str(updated_user["_id"]),
+        username=updated_user["username"],
+        email=updated_user["email"],
+        created_at=updated_user["created_at"],
+        role=updated_user.get("role", "free"),
+        generation_count=updated_user.get("generation_count", 0),
+        last_reset_date=updated_user.get("last_reset_date", datetime.utcnow()),
+        api_key=updated_user.get("api_key")
     )
 
 @router.post("/token", response_model=Token)
@@ -132,5 +171,9 @@ async def read_users_me(
         id=str(user["_id"]),
         username=user["username"],
         email=user["email"],
-        created_at=user["created_at"]
+        created_at=user["created_at"],
+        role=user.get("role", "free"),
+        generation_count=user.get("generation_count", 0),
+        last_reset_date=user.get("last_reset_date", datetime.utcnow()),
+        api_key=user.get("api_key")
     )
