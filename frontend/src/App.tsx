@@ -65,7 +65,7 @@ export default function App() {
                                     </Button>
                                 </SheetTrigger>
                                 <SheetContent side="left">
-                                    <div className="flex flex-col gap-4 mt-12">
+                                    <div className="flex flex-col gap-4 mt-12 px-1">
                                         <NavLink to="/clothing" className={linkCls} onClick={() => setIsOpen(false)}>
                                             <Shirt className="inline w-4 h-4 my-auto mr-1" />
                                             Clothes

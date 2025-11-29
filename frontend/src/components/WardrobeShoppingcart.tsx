@@ -1,5 +1,23 @@
 import { useState } from "react";
-import { ShoppingCart, Plus, X, Check, ArrowLeft, Palette } from "lucide-react";
+import { ShoppingCart, Plus, X, Check, ArrowLeft, Palette, Trash2 } from "lucide-react";
+
+// UI Components
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 // Organized by category
 const CATEGORIES = [
@@ -384,47 +402,32 @@ const CATEGORIES = [
 ];
 
 const COLOR_MAP = {
-    // Neutrals
     black: "#000000",
     white: "#FFFFFF",
     grey: "#808080",
     charcoal: "#36454F",
     silver: "#C0C0C0",
-
-    // Blues
     navy: "#000080",
     blue: "#2563EB",
     "light blue": "#93C5FD",
     denim: "#1E3A8A",
-
-    // Reds & Pinks
     red: "#DC2626",
     burgundy: "#991B1B",
     maroon: "#7F1D1D",
     pink: "#FFC0CB",
-
-    // Greens
     green: "#16A34A",
     olive: "#65A30D",
     forest: "#228B22",
-
-    // Earth Tones
     brown: "#92400E",
     tan: "#D2B48C",
     beige: "#D4A574",
     khaki: "#C7B299",
     camel: "#C19A6B",
     tortoise: "#8B4513",
-
-    // Pastels & Light
     cream: "#FFFDD0",
     ivory: "#FFFFF0",
     lavender: "#E6E6FA",
-
-    // Metallics
     gold: "#FFD700",
-
-    // Bright Colors
     orange: "#FB923C",
     yellow: "#FDE047",
     purple: "#9333EA",
@@ -443,7 +446,7 @@ export default function WardrobeShoppingFlow({ onSave }: { onSave: (items: any[]
     const [notes, setNotes] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
-    // Open item selection modal
+    // Interfaces
     interface CategoryItem {
         id: string;
         type: string;
@@ -452,11 +455,7 @@ export default function WardrobeShoppingFlow({ onSave }: { onSave: (items: any[]
         fits: string[];
     }
 
-    interface SelectedItemData extends CategoryItem {
-        categoryId: string;
-        isCustom: boolean;
-    }
-
+    // Open item selection modal
     const openItemModal = (item: CategoryItem, categoryId: string, isCustom: boolean = false): void => {
         setSelectedItem({ ...item, categoryId, isCustom });
         setCustomItemName(isCustom ? "" : item.type);
@@ -477,7 +476,6 @@ export default function WardrobeShoppingFlow({ onSave }: { onSave: (items: any[]
         }
     };
 
-    // Add custom color
     const addCustomColor = () => {
         if (customColor.trim()) {
             setSelectedColors([...selectedColors, customColor.trim().toLowerCase()]);
@@ -485,7 +483,6 @@ export default function WardrobeShoppingFlow({ onSave }: { onSave: (items: any[]
         }
     };
 
-    // Add custom fit
     const addCustomFit = () => {
         if (customFit.trim()) {
             setSelectedFits([...selectedFits, customFit.trim().toLowerCase()]);
@@ -493,30 +490,13 @@ export default function WardrobeShoppingFlow({ onSave }: { onSave: (items: any[]
         }
     };
 
-    // Add selected variants to cart
     const addToCart = () => {
         const itemType = selectedItem.isCustom ? customItemName.trim() : selectedItem.type;
 
-        if (!itemType) {
-            alert("Please enter an item name");
-            return;
-        }
+        if (!itemType) return;
+        if (selectedColors.length === 0 || selectedFits.length === 0) return;
 
-        if (selectedColors.length === 0 || selectedFits.length === 0) {
-            alert("Please select at least one color and one fit");
-            return;
-        }
-
-        const newItems: Array<{
-            id: string;
-            category: string;
-            type: string;
-            color: string;
-            color_code: string;
-            fit: string;
-            notes: string;
-            icon: string;
-        }> = [];
+        const newItems: Array<any> = [];
         selectedColors.forEach((color) => {
             selectedFits.forEach((fit) => {
                 newItems.push({
@@ -534,23 +514,14 @@ export default function WardrobeShoppingFlow({ onSave }: { onSave: (items: any[]
 
         setCart([...cart, ...newItems]);
         setSelectedItem(null);
-        setCustomItemName("");
-        setSelectedColors([]);
-        setCustomColor("");
-        setSelectedFits([]);
-        setCustomFit("");
-        setNotes("");
     };
 
-    // Remove item from cart
     const removeFromCart = (id: string): void => {
         setCart(cart.filter((item) => item.id !== id));
     };
 
-    // Save all to wardrobe
     const saveToWardrobe = async () => {
         if (cart.length === 0) return;
-
         setIsSaving(true);
         try {
             await onSave(cart);
@@ -562,375 +533,362 @@ export default function WardrobeShoppingFlow({ onSave }: { onSave: (items: any[]
         }
     };
 
-    // Reset to category view
-    const backToCategories = () => {
-        setSelectedCategory(null);
-    };
-
-    // Current view
     const currentCategory = CATEGORIES.find((c) => c.id === selectedCategory);
 
     return (
-        <div className="max-h-screen p-4 bg-background">
+        <div className="min-h-screen p-4 sm:p-6 bg-background">
             <div className="mx-auto max-w-7xl">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold">Add New Items To Your Wardrobe</h1>
-                        <p className="text-sm text-muted-foreground">
-                            {selectedCategory
-                                ? "Select an item or add a custom one"
-                                : "Choose a category to get started"}
-                        </p>
-                    </div>
+                <div className="mb-8 space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Add New Items</h1>
+                    <p className="text-muted-foreground">
+                        {selectedCategory
+                            ? "Select items to customize and add to your cart."
+                            : "Choose a category to get started."}
+                    </p>
                 </div>
 
-                {/* Back button when in category view */}
+                {/* Back Button */}
                 {selectedCategory && (
-                    <button
-                        onClick={backToCategories}
-                        className="cursor-pointer flex items-center gap-2 mb-4 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground"
+                    <Button
+                        variant="ghost"
+                        className="mb-6 -ml-2 gap-2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setSelectedCategory(null)}
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Back to Categories
-                    </button>
+                    </Button>
                 )}
 
                 {/* Categories Grid */}
                 {!selectedCategory && (
-                    <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-3 md:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {CATEGORIES.map((category) => (
-                            <button
+                            <Card
                                 key={category.id}
+                                className="cursor-pointer transition-all hover:border-primary hover:shadow-md hover:bg-accent/50 group"
                                 onClick={() => setSelectedCategory(category.id)}
-                                className="cursor-pointer flex flex-col items-center gap-3 p-8 transition-all bg-white border-2 rounded-lg dark:bg-card hover:border-primary hover:shadow-lg"
                             >
-                                <span className="text-6xl">{category.icon}</span>
-                                <span className="text-base font-semibold">{category.name}</span>
-                            </button>
+                                <CardContent className="flex flex-col items-center justify-center p-6 gap-4 h-full">
+                                    <span className="text-5xl group-hover:scale-110 transition-transform duration-300">
+                                        {category.icon}
+                                    </span>
+                                    <span className="font-semibold text-center">{category.name}</span>
+                                </CardContent>
+                            </Card>
                         ))}
                     </div>
                 )}
 
-                {/* Items Grid (when category selected) */}
+                {/* Items Grid */}
                 {selectedCategory && currentCategory && (
-                    <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 animate-in fade-in duration-500">
                         {currentCategory.items.map((item) => (
-                            <button
+                            <Card
                                 key={item.id}
+                                className="cursor-pointer transition-all hover:border-primary hover:shadow-md hover:bg-accent/50"
                                 onClick={() => openItemModal(item, currentCategory.id, false)}
-                                className="cursor-pointer flex flex-col items-center gap-2 p-6 transition-all bg-white border-2 rounded-lg dark:bg-card hover:border-primary hover:shadow-lg"
                             >
-                                <span className="text-5xl">{item.icon}</span>
-                                <span className="text-sm font-medium text-center capitalize">{item.type}</span>
-                            </button>
+                                <CardContent className="flex flex-col items-center justify-center p-6 gap-3">
+                                    <span className="text-4xl">{item.icon}</span>
+                                    <span className="text-sm font-medium text-center capitalize">{item.type}</span>
+                                </CardContent>
+                            </Card>
                         ))}
 
-                        {/* Custom Item Slot */}
+                        {/* Custom Item Button */}
                         <button
                             onClick={() =>
                                 openItemModal(
-                                    {
-                                        id: "custom",
-                                        type: "custom",
-                                        icon: currentCategory.icon,
-                                        colors: [],
-                                        fits: [],
-                                    },
+                                    { id: "custom", type: "custom", icon: currentCategory.icon, colors: [], fits: [] },
                                     currentCategory.id,
                                     true
                                 )
                             }
-                            className="cursor-pointer flex flex-col items-center gap-2 p-6 transition-all border-2 border-dashed rounded-lg bg-muted/50 hover:border-primary hover:bg-muted"
+                            className="flex flex-col items-center justify-center p-6 gap-3 border-2 border-dashed rounded-xl hover:border-primary hover:bg-accent/50 transition-colors"
                         >
-                            <Plus className="w-12 h-12 text-muted-foreground" />
-                            <span className="text-sm font-medium text-center text-muted-foreground">Custom Item</span>
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                <Plus className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                            <span className="text-sm font-medium text-muted-foreground">Custom Item</span>
                         </button>
                     </div>
                 )}
 
-                {/* Cart */}
+                {/* Cart Section */}
                 {cart.length > 0 && (
-                    <div className="p-4 border rounded-lg bg-card">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <ShoppingCart className="w-5 h-5" />
-                                <h2 className="text-lg font-semibold">Cart ({cart.length} items)</h2>
+                    <Card className="mt-12 border-primary/20">
+                        <div className="p-6 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-full">
+                                    <ShoppingCart className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-semibold">Shopping Cart</h2>
+                                    <p className="text-sm text-muted-foreground">{cart.length} items ready to save</p>
+                                </div>
                             </div>
-                            <button
-                                onClick={saveToWardrobe}
-                                className="cursor-pointer px-4 py-2 text-sm font-medium transition-colors rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
-                            >
-                                Save All to Wardrobe
-                            </button>
+                            <Button onClick={saveToWardrobe} disabled={isSaving} className="w-full sm:w-auto">
+                                {isSaving ? "Saving..." : "Save to Wardrobe"}
+                            </Button>
                         </div>
-
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-muted/10">
                             {cart.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="flex items-center justify-between p-3 border rounded-lg bg-background"
+                                    className="flex items-center justify-between p-3 bg-background border rounded-lg shadow-sm"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl">{item.icon}</span>
-                                        <div className="text-sm">
-                                            <div className="font-medium capitalize">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <span className="text-xl shrink-0">{item.icon}</span>
+                                        <div className="min-w-0">
+                                            <div className="font-medium text-sm truncate capitalize">
                                                 {item.color} {item.fit} {item.type}
                                             </div>
                                             {item.notes && (
-                                                <div className="text-xs text-muted-foreground italic">{item.notes}</div>
+                                                <div className="text-xs text-muted-foreground truncate">
+                                                    {item.notes}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
-                                    <button
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                         onClick={() => removeFromCart(item.id)}
-                                        className="cursor-pointer p-1 transition-colors rounded hover:bg-destructive/10"
                                     >
-                                        <X className="w-4 h-4 text-destructive" />
-                                    </button>
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </Card>
                 )}
+            </div>
 
-                {/* Item Selection Modal */}
-                {selectedItem && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                        <div className="w-full max-w-2xl p-6 rounded-lg shadow-xl bg-card max-h-[90vh] overflow-y-auto">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-4xl">{selectedItem.icon}</span>
-                                    <div>
-                                        {selectedItem.isCustom ? (
-                                            <input
-                                                type="text"
-                                                value={customItemName}
-                                                onChange={(e) => setCustomItemName(e.target.value)}
-                                                placeholder="Enter item name (e.g., puffer jacket)"
-                                                className="w-full p-2 text-xl font-bold border-2 rounded-lg border-border focus:border-primary focus:outline-none"
-                                            />
-                                        ) : (
-                                            <h2 className="text-2xl font-bold capitalize">{selectedItem.type}</h2>
-                                        )}
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            Select colors and fits to add
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedItem(null)}
-                                    className="cursor-pointer p-2 transition-colors rounded-lg hover:bg-muted"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+            {/* Item Config Dialog */}
+            <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+                <DialogContent className="sm:max-w-[600px] max-h-[75vh] flex flex-col p-0 gap-0">
+                    <DialogHeader className="p-6 pb-4 border-b">
+                        <div className="flex items-center gap-4">
+                            <div className="text-4xl bg-muted/30 p-2 rounded-lg">{selectedItem?.icon}</div>
+                            <div className="flex-1">
+                                <DialogTitle className="text-xl">
+                                    {selectedItem?.isCustom ? (
+                                        "Add Custom Item"
+                                    ) : (
+                                        <span className="capitalize">{selectedItem?.type}</span>
+                                    )}
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Configure the details to generate specific wardrobe items.
+                                </DialogDescription>
                             </div>
+                        </div>
+                    </DialogHeader>
 
-                            {/* Colors */}
-                            <div className="mb-6">
-                                <h3 className="mb-3 font-semibold">Colors (select multiple)</h3>
+                    <ScrollArea className="flex-1 p-6 overflow-y-auto">
+                        <div className="space-y-8">
+                            {selectedItem?.isCustom && (
+                                <div className="space-y-3">
+                                    <Label>Item Name</Label>
+                                    <Input
+                                        value={customItemName}
+                                        onChange={(e) => setCustomItemName(e.target.value)}
+                                        placeholder="e.g. Vintage Leather Jacket"
+                                        className="text-lg"
+                                    />
+                                </div>
+                            )}
 
-                                {/* Preset Colors */}
-                                {!selectedItem.isCustom && selectedItem.colors.length > 0 && (
-                                    <div className="grid grid-cols-3 gap-2 mb-3 sm:grid-cols-4">
-                                        {selectedItem.colors.map((color: any) => (
-                                            <button
-                                                key={color}
-                                                onClick={() =>
-                                                    toggleSelection(color, selectedColors, setSelectedColors)
-                                                }
-                                                className={`cursor-pointer flex items-center gap-2 p-3 border-2 rounded-lg transition-all ${
-                                                    selectedColors.includes(color)
-                                                        ? "border-primary bg-primary/10"
-                                                        : "border-border hover:border-primary/50"
-                                                }`}
-                                            >
+                            {/* Colors Section */}
+                            <div className="space-y-3">
+                                <Label>Select Colors</Label>
+                                {!selectedItem?.isCustom && selectedItem?.colors.length > 0 && (
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {selectedItem.colors.map((color: any) => {
+                                            const isSelected = selectedColors.includes(color);
+                                            return (
                                                 <div
-                                                    className="w-6 h-6 border-2 rounded-full border-border"
-                                                    style={{
-                                                        backgroundColor:
-                                                            COLOR_MAP[color as keyof typeof COLOR_MAP] || "#CCCCCC",
-                                                    }}
-                                                />
-                                                <span className="text-sm font-medium capitalize">{color}</span>
-                                                {selectedColors.includes(color) && (
-                                                    <Check className="w-4 h-4 ml-auto text-primary" />
-                                                )}
-                                            </button>
-                                        ))}
+                                                    key={color}
+                                                    onClick={() =>
+                                                        toggleSelection(color, selectedColors, setSelectedColors)
+                                                    }
+                                                    className={cn(
+                                                        "cursor-pointer flex items-center gap-2 p-2 border rounded-md transition-all hover:bg-accent",
+                                                        isSelected
+                                                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                                            : "border-input"
+                                                    )}
+                                                >
+                                                    <div
+                                                        className="w-4 h-4 rounded-full border shadow-sm shrink-0"
+                                                        style={{
+                                                            backgroundColor:
+                                                                COLOR_MAP[color as keyof typeof COLOR_MAP] || "#CCCCCC",
+                                                        }}
+                                                    />
+                                                    <span className="text-xs font-medium capitalize truncate">
+                                                        {color}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
 
                                 {/* Custom Color Input */}
-                                <div className="p-3 border-2 border-dashed rounded-lg border-border">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Palette className="w-4 h-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium">Add Custom Color</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Palette className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
                                             value={customColor}
                                             onChange={(e) => setCustomColor(e.target.value)}
                                             onKeyDown={(e) => e.key === "Enter" && addCustomColor()}
-                                            placeholder="e.g., sage green"
-                                            className="flex-1 p-2 text-sm border rounded-lg border-border focus:border-primary focus:outline-none"
+                                            placeholder="Add custom color..."
+                                            className="pl-9"
                                         />
+                                    </div>
+                                    <div className="flex items-center justify-center border rounded-md w-10 bg-background">
                                         <input
                                             type="color"
                                             value={customColorHex}
                                             onChange={(e) => setCustomColorHex(e.target.value)}
-                                            className="w-12 h-10 border rounded-lg cursor-pointer border-border"
+                                            className="w-8 h-8 rounded cursor-pointer bg-transparent border-none"
                                         />
-                                        <button
-                                            onClick={addCustomColor}
-                                            className="cursor-pointer px-3 py-2 text-sm font-medium transition-colors rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                                        >
-                                            Add
-                                        </button>
                                     </div>
+                                    <Button variant="secondary" onClick={addCustomColor}>
+                                        Add
+                                    </Button>
                                 </div>
 
-                                {/* Selected Colors Display */}
+                                {/* Selected Tags */}
                                 {selectedColors.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-3">
+                                    <div className="flex flex-wrap gap-2 pt-2">
                                         {selectedColors.map((color) => (
-                                            <div
+                                            <Badge
                                                 key={color}
-                                                className="flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary"
+                                                variant="secondary"
+                                                className="gap-1 pl-2 pr-1 py-1 text-xs uppercase tracking-wider"
                                             >
-                                                <span className="capitalize">{color}</span>
-                                                <button
+                                                <div
+                                                    className="w-2 h-2 rounded-full mr-1 border"
+                                                    style={{
+                                                        backgroundColor:
+                                                            COLOR_MAP[color as keyof typeof COLOR_MAP] || "#ccc",
+                                                    }}
+                                                />
+                                                {color}
+                                                <X
+                                                    className="w-3 h-3 ml-1 cursor-pointer hover:text-destructive"
                                                     onClick={() =>
                                                         setSelectedColors(selectedColors.filter((c) => c !== color))
                                                     }
-                                                    className="cursor-pointer hover:text-primary/70"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
+                                                />
+                                            </Badge>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Fits */}
-                            <div className="mb-6">
-                                <h3 className="mb-3 font-semibold">Fits (select multiple)</h3>
+                            <Separator />
 
-                                {/* Preset Fits */}
-                                {!selectedItem.isCustom && selectedItem.fits.length > 0 && (
-                                    <div className="grid grid-cols-2 gap-2 mb-3 sm:grid-cols-3">
-                                        {selectedItem.fits.map((fit: any) => (
-                                            <button
-                                                key={fit}
-                                                onClick={() => toggleSelection(fit, selectedFits, setSelectedFits)}
-                                                className={`cursor-pointer flex items-center justify-between p-3 border-2 rounded-lg transition-all ${
-                                                    selectedFits.includes(fit)
-                                                        ? "border-primary bg-primary/10"
-                                                        : "border-border hover:border-primary/50"
-                                                }`}
-                                            >
-                                                <span className="text-sm font-medium capitalize">{fit}</span>
-                                                {selectedFits.includes(fit) && (
-                                                    <Check className="w-4 h-4 text-primary" />
-                                                )}
-                                            </button>
-                                        ))}
+                            {/* Fits Section */}
+                            <div className="space-y-3">
+                                <Label>Select Fits</Label>
+                                {!selectedItem?.isCustom && selectedItem?.fits.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedItem.fits.map((fit: any) => {
+                                            const isSelected = selectedFits.includes(fit);
+                                            return (
+                                                <Button
+                                                    key={fit}
+                                                    variant={isSelected ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => toggleSelection(fit, selectedFits, setSelectedFits)}
+                                                    className="capitalize"
+                                                >
+                                                    {fit}
+                                                    {isSelected && <Check className="w-3 h-3 ml-2" />}
+                                                </Button>
+                                            );
+                                        })}
                                     </div>
                                 )}
 
-                                {/* Custom Fit Input */}
-                                <div className="p-3 border-2 border-dashed rounded-lg border-border">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Plus className="w-4 h-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium">Add Custom Fit</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={customFit}
-                                            onChange={(e) => setCustomFit(e.target.value)}
-                                            onKeyDown={(e) => e.key === "Enter" && addCustomFit()}
-                                            placeholder="e.g., athletic fit"
-                                            className="flex-1 p-2 text-sm border rounded-lg border-border focus:border-primary focus:outline-none"
-                                        />
-                                        <button
-                                            onClick={addCustomFit}
-                                            className="cursor-pointer 3px-3 py-2 text-sm font-medium transition-colors rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={customFit}
+                                        onChange={(e) => setCustomFit(e.target.value)}
+                                        onKeyDown={(e) => e.key === "Enter" && addCustomFit()}
+                                        placeholder="Add custom fit (e.g. Athletic)..."
+                                    />
+                                    <Button variant="secondary" onClick={addCustomFit}>
+                                        Add
+                                    </Button>
                                 </div>
 
-                                {/* Selected Fits Display */}
                                 {selectedFits.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-3">
+                                    <div className="flex flex-wrap gap-2 pt-2">
                                         {selectedFits.map((fit) => (
-                                            <div
-                                                key={fit}
-                                                className="flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary"
-                                            >
-                                                <span className="capitalize">{fit}</span>
-                                                <button
+                                            <Badge key={fit} variant="outline" className="gap-1 pr-1 py-1">
+                                                {fit}
+                                                <X
+                                                    className="w-3 h-3 ml-1 cursor-pointer hover:text-destructive"
                                                     onClick={() =>
                                                         setSelectedFits(selectedFits.filter((f) => f !== fit))
                                                     }
-                                                    className="cursor-pointer hover:text-primary/70"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
+                                                />
+                                            </Badge>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Notes */}
-                            <div className="mb-6">
-                                <h3 className="mb-3 font-semibold">Notes (optional)</h3>
-                                <input
-                                    type="text"
+                            <Separator />
+
+                            <div className="space-y-3">
+                                <Label>Notes (Optional)</Label>
+                                <Input
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="e.g., extra thick, wool blend, waterproof"
-                                    className="w-full p-3 text-sm border-2 rounded-lg border-border focus:border-primary focus:outline-none"
+                                    placeholder="e.g. Waterproof, Wool blend..."
                                 />
                             </div>
+                        </div>
+                    </ScrollArea>
 
-                            {/* Summary */}
-                            {selectedColors.length > 0 && selectedFits.length > 0 && (
-                                <div className="p-3 mb-6 rounded-lg bg-muted">
-                                    <p className="text-sm font-medium">
-                                        This will add{" "}
-                                        <span className="text-primary">
-                                            {selectedColors.length * selectedFits.length} items
-                                        </span>{" "}
-                                        ({selectedColors.length} colors × {selectedFits.length} fits)
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Actions */}
-                            <div className="flex gap-3">
-                                <button
+                    <DialogFooter className="px-6 py-2 rounded-lg border-t bg-muted/20">
+                        <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="text-sm text-muted-foreground order-2 sm:order-1">
+                                {selectedColors.length > 0 && selectedFits.length > 0 ? (
+                                    <span>
+                                        Generates <strong>{selectedColors.length * selectedFits.length}</strong> items
+                                    </span>
+                                ) : (
+                                    <span>Select colors and fits</span>
+                                )}
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
+                                <Button
+                                    variant="outline"
                                     onClick={() => setSelectedItem(null)}
-                                    className="cursor-pointer flex-1 px-4 py-2 font-medium transition-colors border-2 rounded-lg border-border hover:bg-muted"
+                                    className="flex-1 sm:flex-none"
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    disabled={selectedColors.length === 0 || selectedFits.length === 0}
                                     onClick={addToCart}
-                                    className="cursor-pointer flex-1 px-4 py-2 font-medium transition-colors rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+                                    className="flex-1 sm:flex-none"
                                 >
                                     Add to Cart
-                                </button>
+                                </Button>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

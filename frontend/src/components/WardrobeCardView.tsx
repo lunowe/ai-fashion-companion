@@ -205,7 +205,7 @@ export default function WardrobeCardView({ items, onEdit, onDelete, isLoading }:
                                 <div className="w-full h-full border-2 border-current rounded-[1px]" />
                             </div>
                         </button>
-                        <button
+                        {/* <button
                             onClick={() => setGridCols(3)}
                             className={`p-1.5 rounded-md transition-all ${
                                 gridCols === 3
@@ -218,7 +218,7 @@ export default function WardrobeCardView({ items, onEdit, onDelete, isLoading }:
                                 <div className="w-full h-full border-2 border-current rounded-[1px]" />
                                 <div className="w-full h-full border-2 border-current rounded-[1px]" />
                             </div>
-                        </button>
+                        </button> */}
                     </div>
                 </div>
             </div>
