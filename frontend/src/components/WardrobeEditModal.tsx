@@ -129,7 +129,7 @@ export default function WardrobeEditModal({ item, open, onClose, onSave }: Wardr
     // If using Dialog from shadcn, we handle the 'open' state via the root component
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="sm:max-w-[650px] max-h-[90vh] flex flex-col p-0 gap-0">
+            <DialogContent className="sm:max-w-[650px] max-h-[75vh] flex flex-col p-0 gap-0">
                 <DialogHeader className="p-6 pb-2 border-b">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-10 h-10 text-2xl bg-primary/10 rounded-full">
