@@ -26,6 +26,7 @@ async def get_profile(
     # Create default profile if not exists
     new_profile = UserProfile(user_id=user_id)
     profile_data = jsonable_encoder(new_profile)
+    profile_data.pop("_id", None)
     new_profile_result = await db.user_profiles.insert_one(profile_data)
     created_profile = await db.user_profiles.find_one({"_id": new_profile_result.inserted_id})
     created_profile["_id"] = str(created_profile["_id"])

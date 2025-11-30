@@ -263,6 +263,38 @@ export function SettingsModal({ open, onOpenChange, defaultTab = null }: Setting
 
 // --- Helper Components for Mobile List ---
 
+function TagInput({
+    value,
+    onChange,
+    placeholder,
+}: {
+    value: string[];
+    onChange: (v: string[]) => void;
+    placeholder?: string;
+}) {
+    const [text, setText] = useState(value?.join(", ") || "");
+
+    useEffect(() => {
+        setText(value?.join(", ") || "");
+    }, [value]);
+
+    return (
+        <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() =>
+                onChange(
+                    text
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                )
+            }
+            placeholder={placeholder}
+        />
+    );
+}
+
 function MobileMenuRow({ icon, iconColor, iconBg, title, subtitle, onClick }: any) {
     return (
         <button
@@ -417,16 +449,9 @@ function ProfileTabContent() {
                             name="preferences.preferred_colors"
                             control={control}
                             render={({ field }) => (
-                                <Input
-                                    value={field.value?.join(", ") || ""}
-                                    onChange={(e) =>
-                                        field.onChange(
-                                            e.target.value
-                                                .split(",")
-                                                .map((s) => s.trim())
-                                                .filter(Boolean)
-                                        )
-                                    }
+                                <TagInput
+                                    value={field.value || []}
+                                    onChange={field.onChange}
                                     placeholder="Black, White, Navy..."
                                 />
                             )}
@@ -440,16 +465,9 @@ function ProfileTabContent() {
                             name="preferences.disliked_colors"
                             control={control}
                             render={({ field }) => (
-                                <Input
-                                    value={field.value?.join(", ") || ""}
-                                    onChange={(e) =>
-                                        field.onChange(
-                                            e.target.value
-                                                .split(",")
-                                                .map((s) => s.trim())
-                                                .filter(Boolean)
-                                        )
-                                    }
+                                <TagInput
+                                    value={field.value || []}
+                                    onChange={field.onChange}
                                     placeholder="Neon Green, Hot Pink..."
                                 />
                             )}
@@ -465,16 +483,9 @@ function ProfileTabContent() {
                             name="preferences.preferred_fits"
                             control={control}
                             render={({ field }) => (
-                                <Input
-                                    value={field.value?.join(", ") || ""}
-                                    onChange={(e) =>
-                                        field.onChange(
-                                            e.target.value
-                                                .split(",")
-                                                .map((s) => s.trim())
-                                                .filter(Boolean)
-                                        )
-                                    }
+                                <TagInput
+                                    value={field.value || []}
+                                    onChange={field.onChange}
                                     placeholder="Oversized, Relaxed..."
                                 />
                             )}

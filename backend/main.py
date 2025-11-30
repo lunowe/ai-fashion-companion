@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from config import settings
 from routes import clothing, style, outfit, user_profile, auth, images
+from middleware.auth_refresh import TokenRefreshMiddleware
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,6 +33,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(TokenRefreshMiddleware)
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

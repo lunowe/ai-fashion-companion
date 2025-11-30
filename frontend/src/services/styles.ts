@@ -11,6 +11,7 @@ export async function createStyle(payload: Omit<Style, "_id">): Promise<Style> {
         ...payload,
         reference_images: Array.isArray(payload.reference_images) ? payload.reference_images : [],
     };
+    console.log("sanitized", sanitized);
     const { data } = await api.post("/api/styles/", sanitized);
     return data;
 }

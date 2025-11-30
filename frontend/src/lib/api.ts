@@ -33,7 +33,17 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Check for refreshed tokens from backend
+        const newAccess = response.headers["x-new-access-token"];
+        const newRefresh = response.headers["x-new-refresh-token"];
+        if (newAccess && newRefresh) {
+            localStorage.setItem("token", newAccess);
+            localStorage.setItem("refresh_token", newRefresh);
+            api.defaults.headers.common.Authorization = `Bearer ${newAccess}`;
+        }
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
 
