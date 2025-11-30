@@ -165,7 +165,7 @@ export function SettingsModal({ open, onOpenChange, defaultTab = null }: Setting
     // --- MOBILE VIEW (Drawer) ---
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="h-[90vh] flex flex-col rounded-t-[10px] outline-none">
+            <DrawerContent className="h-[80vh] flex flex-col rounded-t-[10px] outline-none">
                 {/* Mobile Header */}
                 <DrawerHeader className="border-b px-4 py-3 flex items-center justify-between min-h-[60px]">
                     {activeTab ? (
