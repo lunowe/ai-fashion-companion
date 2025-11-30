@@ -9,8 +9,6 @@ import ClothingListPage from "./pages/ClothingListPage";
 import StylesPage from "./pages/StylesPages";
 import OutfitGeneratorPage from "./pages/OutfitsGeneratorPage";
 import OutfitsListPage from "./pages/OutfitsListPage";
-import ProfilePage from "./pages/ProfilePage";
-import SettingsPage from "./pages/Settings";
 
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
@@ -39,8 +37,6 @@ const router = createBrowserRouter([
                     { path: "styles", element: <StylesPage /> },
                     { path: "outfits", element: <OutfitsListPage /> },
                     { path: "generate", element: <OutfitGeneratorPage /> },
-                    { path: "profile", element: <ProfilePage /> },
-                    { path: "settings", element: <SettingsPage /> },
                 ],
             },
         ],
