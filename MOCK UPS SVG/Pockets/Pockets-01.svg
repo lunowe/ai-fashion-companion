@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1424.52 1390.48">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        fill: none;
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1, .cls-3 {
+        stroke-width: 1.45px;
+      }
+
+      .cls-5 {
+        fill: #a7a9ac;
+      }
+
+      .cls-5, .cls-6 {
+        stroke-width: 0px;
+      }
+
+      .cls-2, .cls-4 {
+        stroke-width: 1.62px;
+      }
+
+      .cls-3 {
+        stroke-dasharray: 0 5.82;
+      }
+
+      .cls-6 {
+        fill: url(#Degradado_sin_nombre_5);
+      }
+
+      .cls-4 {
+        stroke-dasharray: 0 6.48;
+        stroke-linecap: round;
+      }
+    </style>
+    <linearGradient id="Degradado_sin_nombre_5" data-name="Degradado sin nombre 5" x1="373.1" y1="198.34" x2="343.78" y2="222.94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="0" stop-color="#f5f5f5"/>
+      <stop offset=".05" stop-color="#c7c7c7"/>
+      <stop offset=".09" stop-color="#9c9c9c"/>
+      <stop offset=".14" stop-color="#777"/>
+      <stop offset=".2" stop-color="#565656"/>
+      <stop offset=".25" stop-color="#3b3b3b"/>
+      <stop offset=".32" stop-color="#252525"/>
+      <stop offset=".4" stop-color="#141414"/>
+      <stop offset=".49" stop-color="#080808"/>
+      <stop offset=".63" stop-color="#010101"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+  </defs>
+  <g id="fondo">
+    <rect class="cls-5" x="221.57" y="81.61" width="270.79" height="533.67" rx="6.56" ry="6.56"/>
+  </g>
+  <g id="trama">
+    <rect class="cls-2" x="221.57" y="81.61" width="270.79" height="533.67" rx="6.56" ry="6.56"/>
+    <rect class="cls-1" x="221.57" y="81.61" width="270.79" height="178.8" rx="3.8" ry="3.8"/>
+    <rect class="cls-3" x="284.13" y="48.38" width="145.66" height="245.27" transform="translate(527.97 -185.95) rotate(90)"/>
+    <polyline class="cls-4" points="446.11 260.41 446.11 548.31 270.78 548.31 270.78 260.41"/>
+  </g>
+  <g id="detalles">
+    <circle class="cls-6" cx="358.44" cy="210.64" r="19.13"/>
+  </g>
+</svg>

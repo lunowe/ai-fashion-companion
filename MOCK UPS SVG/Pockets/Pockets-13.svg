@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1424.52 2084.12">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+        stroke-width: 2.55px;
+      }
+
+      .cls-1, .cls-4 {
+        fill: #a7a9ac;
+      }
+
+      .cls-2, .cls-3 {
+        fill: none;
+        stroke-dasharray: 0 5.1;
+      }
+
+      .cls-3, .cls-4 {
+        stroke-linecap: round;
+      }
+    </style>
+  </defs>
+  <g id="fondo">
+    <rect class="cls-1" x="85.81" y="951.68" width="540" height="73.64"/>
+  </g>
+  <g id="trama">
+    <rect class="cls-3" x="111.63" y="995.84" width="492.35" height="29.48"/>
+    <path class="cls-1" d="m587.87,1002.87H124.98c-5.57,0-8.63,6.48-5.09,10.79l237.04,238.56,236.04-238.57c3.53-4.31.46-10.78-5.1-10.78Z"/>
+    <polyline class="cls-2" points="553.46 1002.87 358.27 1198.07 165.44 1005.24"/>
+  </g>
+  <g id="detalles">
+    <line class="cls-4" x1="124.98" y1="1002.87" x2="111.63" y2="1002.87"/>
+    <line class="cls-4" x1="587.87" y1="1002.87" x2="600.92" y2="1002.87"/>
+  </g>
+</svg>

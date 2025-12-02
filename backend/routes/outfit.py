@@ -4,7 +4,7 @@ from typing import List
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone 
 from utils.auth import get_current_user 
 from models.user import UserResponse
 
@@ -31,7 +31,7 @@ async def generate_outfits(
         "byok": float("inf")
     }
     
-    current_time = datetime.utcnow()
+    current_time = datetime.now(timezone.utc)
     last_reset = current_user.last_reset_date
     
     # Reset if it's a new day (simple check: different date)
@@ -77,6 +77,8 @@ async def generate_outfits(
     # Get user profile for preferences
     user_profile = await db.user_profiles.find_one({"user_id": user_id})
     user_preferences = user_profile.get("preferences", {}) if user_profile else {}
+    user_style_notes = user_profile.get("style_notes", "") if user_profile else ""
+    user_preferences["style_notes"] = user_style_notes
 
     try:
         # Generate outfits
@@ -95,11 +97,30 @@ async def generate_outfits(
         
         if not generated_outfits:
             raise HTTPException(status_code=500, detail="Failed to generate outfits")
-            
-        # Increment generation count
+
+        history_entry = {
+            "generated_at": current_time,
+            "request_details": {
+                "style_name": style.get("name"),
+                "occasion": outfit_request.occasion,
+                "weather": outfit_request.weather,
+                "description": outfit_request.description
+            },
+            "outfits": generated_outfits
+        }
+
+        # Update User: Increment count AND Push to history (keeping only last 5)
         await db.users.update_one(
             {"_id": ObjectId(user_id)},
-            {"$inc": {"generation_count": 1}}
+            {
+                "$inc": {"generation_count": 1},
+                "$push": {
+                    "generation_history": {
+                        "$each": [history_entry],
+                        "$slice": -5  # Negative number keeps the last 5 elements
+                    }
+                }
+            }
         )
         
         return {"outfits": generated_outfits}
@@ -108,6 +129,27 @@ async def generate_outfits(
         #     f.write(traceback.format_exc())
         print(f"Error in route generate_outfits: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate outfits")
+
+@router.get("/history", response_description="Get past generation history")
+async def get_generation_history(
+    request: Request,
+    current_user: UserResponse = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    user_id = current_user.id
+    
+    # Fetch only the generation_history field for the user
+    user = await db.users.find_one(
+        {"_id": ObjectId(user_id)},
+        {"generation_history": 1}
+    )
+    
+    history = user.get("generation_history", [])
+    
+    # Sort by date descending (newest first) for display
+    history.reverse()
+    
+    return history
 
 @router.post("/", response_description="Save an outfit")
 async def save_outfit(

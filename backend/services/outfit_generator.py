@@ -74,10 +74,17 @@ class OutfitGenerator:
         print(f"Generated prompt for outfit generation:\n{prompt}\n")        
         try:
             # Use user's API key if provided (BYOK), otherwise use system key
-            genai_key = api_key if api_key else settings.GOOGLE_GENAI_API_KEY
+            # genai_key = api_key if api_key else settings.GOOGLE_GENAI_API_KEY
             
-            llm = GoogleGenAI(
-                model="gemini-3-pro-preview",
+            # llm = GoogleGenAI(
+            #     model="gemini-3-pro-preview",
+            #     api_key=genai_key
+            # )
+
+            genai_key = api_key if api_key else settings.OPENAI_API_KEY
+            llm = OpenAIResponses(
+                model="gpt-5.1",
+                reasoning_options={"effort": "medium"},
                 api_key=genai_key
             )
 

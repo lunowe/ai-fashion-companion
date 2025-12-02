@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248.41 52.9">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-width: .2px;
+      }
+
+      .cls-1, .cls-2 {
+        fill: #ccc;
+        fill-rule: evenodd;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #000;
+        stroke-miterlimit: 2.61;
+      }
+
+      .cls-2, .cls-3 {
+        stroke-width: .5px;
+      }
+
+      .cls-3 {
+        fill: none;
+      }
+    </style>
+  </defs>
+  <polygon class="cls-2" points="74.86 52.65 145.91 52.65 145.91 49.5 145.91 45.38 126.33 45.76 88.44 46.48 74.86 46.74 74.86 52.65 74.86 52.65"/>
+  <polygon class="cls-2" points="145.91 49.5 242.13 49.5 241.6 43.56 237.47 43.64 145.91 45.38 145.91 49.5 145.91 49.5"/>
+  <polygon class="cls-2" points="73.54 5.38 88.44 5.38 118.86 5.38 126.33 5.07 145.91 4.26 145.91 1.69 73.43 1.69 73.54 5.38 73.54 5.38"/>
+  <polygon class="cls-1" points="2.47 48.12 .11 5.38 118.86 5.38 246.06 .1 248.3 43.43 2.47 48.12 2.47 48.12"/>
+  <path class="cls-3" d="m235.13.56l2.36,43.37M73.54,5.38l-.11-3.7h72.47v50.96h-71.04v-5.91m13.58-41.36v41.1M126.33,5.07v40.68m115.27-2.2l.53,5.94h-96.23"/>
+</svg>

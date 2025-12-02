@@ -1,7 +1,18 @@
 import { useState, useMemo } from "react";
-import { Search, Sparkles, ArrowLeft, Check, X, Shirt, Thermometer, Calendar, MessageSquare } from "lucide-react";
+import {
+    Search,
+    Sparkles,
+    ArrowLeft,
+    Check,
+    X,
+    Shirt,
+    Thermometer,
+    Calendar,
+    MessageSquare,
+    Clock,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { ClothingItem, Style, GeneratedOutfit, OutfitCreate } from "@/types";
+import type { ClothingItem, Style, GeneratedOutfit, OutfitCreate, HistoryEntry } from "@/types";
 import { resolveItemObjects, normalizeGenerated } from "@/lib/outfit-utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import GenerationHistory from "@/components/GenerationHistory";
 
 // --- Configuration ---
 const OCCASION_PRESETS = [
@@ -64,9 +76,17 @@ interface OutfitGeneratorProps {
     onGenerate: (params: any) => Promise<GeneratedOutfit[]>;
     onSave: (outfit: OutfitCreate) => void;
     disabled?: boolean;
+    history: HistoryEntry[];
 }
 
-export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave, disabled }: OutfitGeneratorProps) {
+export default function OutfitGeneratorV2({
+    styles,
+    wardrobe,
+    onGenerate,
+    onSave,
+    disabled,
+    history,
+}: OutfitGeneratorProps) {
     // Step: 1=Config, 2=Loading, 3=Results
     const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -81,6 +101,7 @@ export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave
     const [numOutfits, setNumOutfits] = useState(3);
     const [itemSearch, setItemSearch] = useState("");
     const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+    const [showHistory, setShowHistory] = useState(false);
 
     // Results
     const [generatedOutfits, setGeneratedOutfits] = useState<GeneratedOutfit[]>([]);
@@ -152,10 +173,31 @@ export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave
         setGeneratedOutfits([]);
     };
 
+    const handleRestoreHistory = (entry: HistoryEntry) => {
+        // 1. Restore the Outfits
+        setGeneratedOutfits(entry.outfits.map(normalizeGenerated));
+
+        // 2. Restore the context inputs (Optional, but nice for UX)
+        if (entry.request_details.occasion) setSelectedOccasion(entry.request_details.occasion);
+        if (entry.request_details.weather) setCustomWeather(entry.request_details.weather); // Simplified mapping
+        if (entry.request_details.description) setFreeText(entry.request_details.description);
+
+        // 3. Move to results step
+        setStep(3);
+        setShowHistory(false);
+    };
+
     // --- Render Helpers ---
 
     return (
         <div className="max-w-5xl mx-auto py-6 px-4 md:px-0">
+            <GenerationHistory
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                history={history}
+                onRestore={handleRestoreHistory}
+            />
+
             <AnimatePresence mode="wait">
                 {/* STEP 1: CONFIGURATION */}
                 {step === 1 && (
@@ -166,7 +208,18 @@ export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <div className="flex flex-col items-center justify-center space-y-2 mb-8">
+                        <div className="flex flex-col items-center justify-center space-y-2 mb-8 relative">
+                            <div className="absolute top-0 right-0 md:right-[-20px]">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 rounded-full border-dashed"
+                                    onClick={() => setShowHistory(true)}
+                                >
+                                    <Clock className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Recent</span>
+                                </Button>
+                            </div>
                             <h1 className="text-5xl font-bold tracking-tighter">
                                 Hey,
                                 <br /> Let's get dressed.
@@ -480,13 +533,25 @@ export default function OutfitGeneratorV2({ styles, wardrobe, onGenerate, onSave
                                     <li>Description: {getFinalValues().description}</li>
                                 </ul>
                             </div>
-                            <div className="flex gap-3">
-                                <Button variant="outline" onClick={handleReset} className="gap-2">
-                                    <ArrowLeft className="w-4 h-4" /> New Search
-                                </Button>
-                                <Button onClick={handleGenerate} className="gap-2">
-                                    <Sparkles className="w-4 h-4" /> Regenerate
-                                </Button>
+                            <div className="flex flex-col justify-between gap-y-3">
+                                <div className="flex gap-3">
+                                    <Button variant="outline" onClick={handleReset} className="gap-2">
+                                        <ArrowLeft className="w-4 h-4" /> New Search
+                                    </Button>
+                                    <Button onClick={handleGenerate} className="gap-2">
+                                        <Sparkles className="w-4 h-4" /> Regenerate
+                                    </Button>
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button
+                                        variant="outline"
+                                        className="gap-2 rounded-full border-dashed"
+                                        onClick={() => setShowHistory(true)}
+                                    >
+                                        <Clock className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Recent</span>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
 

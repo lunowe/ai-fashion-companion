@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { Outfit, OutfitCreate, GeneratedOutfit, OutfitGenRequest } from "@/types";
+import type { Outfit, OutfitCreate, GeneratedOutfit, OutfitGenRequest, HistoryEntry } from "@/types";
 
 export async function generateOutfits(payload: OutfitGenRequest): Promise<GeneratedOutfit[]> {
     console.log("Generating outfits with payload:", payload);
@@ -22,3 +22,8 @@ export async function listOutfits(): Promise<Outfit[]> {
 export async function deleteOutfit(id: string): Promise<void> {
     await api.delete(`/api/outfits/${id}`);
 }
+
+export const getGenerationHistory = async (): Promise<HistoryEntry[]> => {
+    const res = await api.get("/api/outfits/history"); // Adjust URL based on your router prefix
+    return res.data;
+};

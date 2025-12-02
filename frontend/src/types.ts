@@ -51,3 +51,14 @@ export type GeneratedOutfit = {
     name: string;
     ai_generated_reasoning: string;
 };
+
+export interface HistoryEntry {
+    generated_at: string; // ISO Date string
+    request_details: {
+        style_name?: string;
+        occasion?: string;
+        weather?: string;
+        description?: string;
+    };
+    outfits: GeneratedOutfit[];
+}

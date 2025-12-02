@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 116.2 199.38">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #bcbec0;
+        stroke-width: 2px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        stroke: #231f20;
+      }
+
+      .cls-1, .cls-4 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        stroke-dasharray: 0 0 2 4;
+        stroke-width: 1.76px;
+      }
+
+      .cls-2, .cls-3 {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-3 {
+        stroke-dasharray: 0 0 2.06 4.11;
+        stroke-width: 1.81px;
+      }
+
+      .cls-4 {
+        fill: #6d6e71;
+        stroke-width: 2.06px;
+      }
+    </style>
+  </defs>
+  <g id="Capa_1" data-name="Capa 1">
+    <g>
+      <g>
+        <polygon class="cls-4" points="90.58 198.35 1.16 198.35 25.61 1.03 115.03 1.03 90.58 198.35"/>
+        <line class="cls-3" x1="35.88" y1="1.03" x2="11.43" y2="198.35"/>
+        <line class="cls-3" x1="102.95" y1="1.03" x2="78.5" y2="198.35"/>
+      </g>
+      <rect class="cls-1" x="1.16" y="11.21" width="89.42" height="187.14"/>
+      <line class="cls-2" x1="11.43" y1="11.21" x2="11.43" y2="198.35"/>
+      <line class="cls-2" x1="78.5" y1="11.21" x2="78.5" y2="198.35"/>
+    </g>
+  </g>
+</svg>

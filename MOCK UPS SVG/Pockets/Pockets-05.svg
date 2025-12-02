@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 27.8.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 3002.8 2838.6" style="enable-background:new 0 0 3002.8 2838.6;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#A7A9AC;}
+	.st1{fill:none;stroke:#231F20;stroke-width:2.16;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:#231F20;stroke-width:2.16;stroke-linecap:round;stroke-linejoin:round;}
+	.st3{fill:none;stroke:#231F20;stroke-width:2.16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:0,0,8.82,8.82;}
+	.st4{fill:none;stroke:#231F20;stroke-width:2.16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:0,0,8.67,8.67;}
+	.st5{fill:none;stroke:#231F20;stroke-width:2.16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:0,0,7.63,7.63;}
+	.st6{fill:#D1D3D4;}
+</style>
+<g id="fondo">
+	<path class="st0" d="M1856.6,2003.1h-196.7c-32.3,0-58.6-26.2-58.6-58.6l98.4-228.2h203.3v240.3
+		C1903.1,1982.3,1882.3,2003.1,1856.6,2003.1L1856.6,2003.1z"/>
+	<path class="st0" d="M2005.9,2003.1h196.7c32.4,0,58.6-26.2,58.6-58.6l-98.4-228.2h-203.3v240.3
+		C1959.4,1982.3,1980.2,2003.1,2005.9,2003.1L2005.9,2003.1z"/>
+</g>
+<g id="trama">
+	<path class="st1" d="M1856.6,2003.1h-196.7c-32.3,0-58.6-26.2-58.6-58.6l98.4-228.2h203.3v240.3
+		C1903.1,1982.3,1882.3,2003.1,1856.6,2003.1L1856.6,2003.1z"/>
+	<g>
+		<polyline class="st2" points="1716.5,1728.9 1718.2,1724.9 1722.6,1724.9 		"/>
+		<line class="st3" x1="1731.4" y1="1724.9" x2="1885.7" y2="1724.9"/>
+		<polyline class="st2" points="1890.2,1724.9 1894.5,1724.9 1894.5,1729.3 		"/>
+		<path class="st4" d="M1894.5,1737.9v218.6c0,20.9-17,37.8-37.8,37.8h-196.7c-26.9,0-36.3-21.5-37.2-48.2l92-213.3"/>
+	</g>
+	<g>
+		<line class="st2" x1="1622.8" y1="1946.2" x2="1621" y2="1950.2"/>
+		<line class="st5" x1="1617.9" y1="1957.1" x2="1613.3" y2="1967.6"/>
+		<line class="st2" x1="1611.7" y1="1971.1" x2="1609.9" y2="1975"/>
+	</g>
+	<g>
+		<line class="st2" x1="1721.7" y1="1716.3" x2="1720.1" y2="1720.3"/>
+		<line class="st2" x1="1719.8" y1="1720.9" x2="1718.2" y2="1724.9"/>
+	</g>
+	<path class="st1" d="M2005.9,2003.1h196.7c32.4,0,58.6-26.2,58.6-58.6l-98.4-228.2h-203.3v240.3
+		C1959.4,1982.3,1980.2,2003.1,2005.9,2003.1L2005.9,2003.1z"/>
+	<g>
+		<polyline class="st2" points="2146,1728.9 2144.3,1724.9 2139.9,1724.9 		"/>
+		<line class="st3" x1="2131.1" y1="1724.9" x2="1976.8" y2="1724.9"/>
+		<polyline class="st2" points="1972.3,1724.9 1968,1724.9 1968,1729.3 		"/>
+		<path class="st4" d="M1968,1737.9v218.6c0,20.9,17,37.8,37.8,37.8h196.7c26.9,0,36.3-21.5,37.2-48.2l-92-213.3"/>
+	</g>
+	<g>
+		<line class="st2" x1="2239.7" y1="1946.2" x2="2241.5" y2="1950.2"/>
+		<line class="st5" x1="2244.6" y1="1957.1" x2="2249.2" y2="1967.6"/>
+		<line class="st2" x1="2250.8" y1="1971.1" x2="2252.5" y2="1975"/>
+	</g>
+	<g>
+		<line class="st2" x1="2140.8" y1="1716.3" x2="2142.4" y2="1720.3"/>
+		<line class="st2" x1="2142.7" y1="1720.9" x2="2144.3" y2="1724.9"/>
+	</g>
+</g>
+<g id="detalles">
+	<circle class="st6" cx="1611.8" cy="1945.3" r="9"/>
+	<circle class="st6" cx="1706.2" cy="1727.2" r="9"/>
+	<circle class="st6" cx="2250.7" cy="1945.3" r="9"/>
+	<circle class="st6" cx="2156.3" cy="1727.2" r="9"/>
+	<g>
+		<defs>
+			<rect id="SVGID_1_" y="718.9" width="1736.9" height="730.8"/>
+		</defs>
+		<clipPath id="SVGID_00000134942347067323223060000014588302513675163536_">
+			<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
+		</clipPath>
+	</g>
+</g>
+</svg>

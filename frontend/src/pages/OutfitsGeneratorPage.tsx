@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listStyles } from "@/services/styles";
 import { listClothing } from "@/services/clothing";
-import { generateOutfits, saveOutfit } from "@/services/outfits";
+import { generateOutfits, saveOutfit, getGenerationHistory } from "@/services/outfits";
 import type { OutfitCreate, GeneratedOutfit, OutfitGenRequest } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -34,11 +34,21 @@ export default function OutfitGeneratorPage() {
         queryFn: listClothing,
     });
 
+    const { data: history } = useQuery({
+        queryKey: ["generation-history"],
+        queryFn: getGenerationHistory,
+        refetchOnWindowFocus: false,
+    });
+
     const [saveOpen, setSaveOpen] = useState(false);
     const [toSave, setToSave] = useState<OutfitCreate | null>(null);
 
     const genMut = useMutation({
         mutationFn: generateOutfits,
+        onSuccess: () => {
+            // When a new generation is successful, refresh the history list
+            qc.invalidateQueries({ queryKey: ["generation-history"] });
+        },
         onError: () => toast.error("Failed to generate outfits"),
     });
 
@@ -96,6 +106,7 @@ export default function OutfitGeneratorPage() {
                 onGenerate={handleGenerate}
                 onSave={handleSave}
                 disabled={isLimitReached}
+                history={history || []}
             />
             {/* <OutfitGeneratorV3
                 styles={styles || []}
