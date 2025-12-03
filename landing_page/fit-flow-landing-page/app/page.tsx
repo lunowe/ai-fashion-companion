@@ -92,6 +92,9 @@ function Navigation() {
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              window.open("https://fit-flow-beta-three.vercel.app/", "_blank");
+            }}
           >
             Log in
           </Button>
