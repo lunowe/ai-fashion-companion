@@ -1,6 +1,6 @@
 import json
 import openai
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from config import settings
 from models.clothing import ClothingItem
 from models.style import Style
@@ -61,11 +61,11 @@ class OutfitGenerator:
         
         # Build the prompt
         prompt = self._build_generation_prompt(
-            formatted_wardrobe,
+            wardrobe_items,
             style,
             occasion,
             weather,
-            formatted_required,
+            required_items,
             description,
             user_preferences,
             num_outfits
@@ -74,19 +74,19 @@ class OutfitGenerator:
         print(f"Generated prompt for outfit generation:\n{prompt}\n")        
         try:
             # Use user's API key if provided (BYOK), otherwise use system key
-            # genai_key = api_key if api_key else settings.GOOGLE_GENAI_API_KEY
+            genai_key = api_key if api_key else settings.GOOGLE_GENAI_API_KEY
             
-            # llm = GoogleGenAI(
-            #     model="gemini-3-pro-preview",
-            #     api_key=genai_key
-            # )
-
-            genai_key = api_key if api_key else settings.OPENAI_API_KEY
-            llm = OpenAIResponses(
-                model="gpt-5.1",
-                reasoning_options={"effort": "medium"},
+            llm = GoogleGenAI(
+                model="gemini-3-pro-preview",
                 api_key=genai_key
             )
+
+            # genai_key = api_key if api_key else settings.OPENAI_API_KEY
+            # llm = OpenAIResponses(
+            #     model="gpt-5.1",
+            #     reasoning_options={"effort": "medium"},
+            #     api_key=genai_key
+            # )
 
             blocks = []
             if style.get('reference_images'):
@@ -200,110 +200,120 @@ class OutfitGenerator:
             # Assume it's already a file path
             return Path(url_or_key)
             
-    def _format_wardrobe(self, wardrobe_items: List[Dict]) -> str:
+    def _format_wardrobe(self, wardrobe_items: List[Dict]) -> List[Dict]:
         """Format wardrobe items for the prompt."""
-        formatted_items = []
-        
-        for item in wardrobe_items:
-            formatted_item = f"ID: {item['_id']}, Type: {item['type']}, Category: {item['category']}, Fit: {item['fit']}, Color: {item['color']}, Notes: {item['notes'] if 'notes' in item else 'N/A'}"
-            if item.get('seasons'):
-                formatted_item += f", Seasons: {', '.join(item['seasons'])}"
-            formatted_items.append(formatted_item)
-            
-        return "\n".join(formatted_items)
-        
-    def _format_required_items(self, required_items: List[Dict]) -> str:
+        return [
+            {
+                "id": str(item["_id"]),
+                "type": item["type"],
+                "category": item["category"],
+                "fit": item["fit"],
+                "color": item["color"],
+                "notes": item.get("notes"),
+                "seasons": item.get("seasons")
+            }
+            for item in wardrobe_items
+        ]
+
+    def _format_required_items(self, required_items: List[Dict]) -> List[Dict] | None:
         """Format required items for the prompt."""
         if not required_items:
-            return "None"
-            
-        formatted_items = []
-        for item in required_items:
-            formatted_items.append(f"ID: {item['_id']}, Type: {item['type']}, Fit: {item['fit']}, Color: {item['color']}, Notes: {item['notes'] if 'notes' in item else 'N/A'}")
-            
-        return "\n".join(formatted_items)
+            return None
         
+        return [
+            {
+                "id": str(item["_id"]),
+                "type": item["type"],
+                "fit": item["fit"],
+                "color": item["color"],
+                "notes": item.get("notes")
+            }
+            for item in required_items
+        ]
+        
+
     def _build_generation_prompt(
         self,
-        formatted_wardrobe: str,
+        wardrobe_items: List[Dict],
         style: Dict,
         occasion: str,
         weather: str,
-        formatted_required: str,
+        required_items: List[Dict] | None,
         description: str,
         user_preferences: Dict,
         num_outfits: int
     ) -> str:
-        """Build the prompt for the LLM."""
-        style_reference_images = "Reference Images: Provided" if style.get('reference_images') else ""
+        """Build a JSON-structured prompt for the LLM."""
+        import json
         
-        user_prefs_str = ""
-        if user_preferences:
-            if user_preferences.get("preferred_colors"):
-                user_prefs_str += f"- Preferred Colors: {', '.join(user_preferences['preferred_colors'])}\n"
-            if user_preferences.get("disliked_colors"):
-                user_prefs_str += f"- Disliked Colors: {', '.join(user_preferences['disliked_colors'])}\n"
-            if user_preferences.get("preferred_fits"):
-                user_prefs_str += f"- Preferred Fits: {', '.join(user_preferences['preferred_fits'])}\n"
-            if user_preferences.get("style_notes"):
-                user_prefs_str += f"- Style Notes: {user_preferences['style_notes']}\n"
+        prompt_data = {
+            "task": {
+                "action": "create_outfits",
+                "count": num_outfits,
+                "output_format": "json_only"
+            },
+            "wardrobe_items": self._format_wardrobe(wardrobe_items),
+            "constraints": {
+                "style": {
+                    "name": style["name"],
+                    "description": style["description"],
+                    "has_reference_images": bool(style.get("reference_images"))
+                },
+                "occasion": occasion,
+                "weather": weather,
+                "required_items": self._format_required_items(required_items)
+            },
+            "user_preferences": {
+                "preferred_colors": user_preferences.get("preferred_colors", []),
+                "disliked_colors": user_preferences.get("disliked_colors", []),
+                "preferred_fits": user_preferences.get("preferred_fits", []),
+                "style_notes": user_preferences.get("style_notes", "")
+            } if user_preferences else None,
+            "user_request": description or None,
+            "instructions": [
+                f"Create {num_outfits} distinct outfits matching style '{style['name']}' for '{occasion}' in '{weather}' weather",
+                "If reference images provided, align outfits with visual cues",
+                "Include all required items in each outfit",
+                "Ensure color coordination, fit combination, and style cohesion",
+                "Provide brief reasoning for each outfit",
+                "Ensure variety between outfits",
+                "PRIORITIZE user preferences; AVOID disliked colors/styles",
+                "User request/description takes priority over general rules",
+                "RETURN ONLY VALID JSON - no conversational text"
+            ],
+            "guidelines": {
+                "layering": "lighter colors under darker colors",
+                "silhouette": "avoid slim bottoms with bulky tops",
+                "color_balance": "balance bold colors with neutrals",
+                "accessories": "enhance without clashing",
+                "practicality": "appropriate for weather conditions",
+                "appropriateness": "suitable for the occasion"
+            },
+            "priority_order": [
+                "user_request (if provided)",
+                "required_items",
+                "user_preferences (avoid disliked, favor preferred)",
+                "style alignment",
+                "occasion/weather appropriateness"
+            ],
+            "response_schema": {
+                "outfits": [
+                    {
+                        "outfit_name": "string",
+                        "items": ["item_id_1", "item_id_2"],
+                        "reasoning": "string"
+                    }
+                ]
+            }
+        }
         
-        description_str = f"\nUSER REQUEST/DESCRIPTION:\n{description}\n" if description else ""
-
-        prompt = f"""
-        Create {num_outfits} outfits based on the following constraints:
-
-        WARDROBE ITEMS:
-        {formatted_wardrobe}
-
-        STYLE:
-        Name: {style['name']}
-        Description: {style['description']}
-        {style_reference_images}
-
-        OCCASION:
-        {occasion}
-
-        WEATHER:
-        {weather}
-        {description_str}
-        REQUIRED ITEMS (These must be included in the outfit):
-        {formatted_required}
-
-        USER PREFERENCES:
-        {user_prefs_str}
-
-        INSTRUCTIONS:
-        1. Create {num_outfits} distinct outfits that adhere to the style "{style['name']}" and are appropriate for a "{occasion}" in "{weather}" weather conditions.
-        2. If reference images are provided for the style, make sure to align the outfits with the visual cues from those images.
-        3. Include the required items in each outfit.
-        4. Each outfit should be cohesive in terms of color coordination, fit combination, and style aesthetics.
-        5. Provide a brief explanation for why each outfit works well for the given style, occasion, and weather.
-        6. Ensure variety between the outfits if possible.
-        7. RESPECT USER PREFERENCES: Prioritize preferred colors/fits and AVOID disliked colors/styles unless necessary for the specific style request.
-        8. If a specific User Request/Description is provided, prioritize it above general occasion/style rules.
-        9. RETURN ONLY JSON. Do not include any conversational text.
-
-        GENERAL GUIDELINES FOR OUTFIT CREATION:
-        - layering generally works better with lighter colors under darker colors
-        - consider the fit of items to ensure a silhouette that matches the style. Try avoiding slimmer bottom pieces with bulkier top pieces
-        - balance bold colors with neutrals to avoid overwhelming the outfit
-        - use accessories to enhance the outfit without clashing
-        - consider the practicality of the outfit for the specified weather conditions
-        - ensure the outfit is appropriate for the specified occasion
-
-        Format your response as a JSON object with the following structure:
-        {{
-            "outfits": [
-                {{
-                    "outfit_name": "Name of the outfit",
-                    "items": ["item_id_1", "item_id_2", "item_id_3", ...],
-                    "reasoning": "Explanation of why this outfit works"
-                }}
-            ]
-        }}
-        """
-        return prompt
+        # Clean None values recursively
+        def clean_none(obj):
+            if isinstance(obj, dict):
+                return {k: clean_none(v) for k, v in obj.items() if v is not None}
+            return obj
+        
+        return json.dumps(clean_none(prompt_data), indent=2)
         
     def _map_outfits_to_ids(self, generated_outfits: List[Dict], wardrobe_items: List[Dict]) -> List[Dict]:
         """Map the generated outfits to actual clothing item IDs."""

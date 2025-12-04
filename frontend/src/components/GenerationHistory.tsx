@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Clock, X, ChevronRight, Calendar, Cloud, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns"; // Optional: npm install date-fns
 import type { HistoryEntry } from "@/types";

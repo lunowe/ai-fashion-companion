@@ -11,7 +11,7 @@ import {
     MessageSquare,
     Clock,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react"
 import type { ClothingItem, Style, GeneratedOutfit, OutfitCreate, HistoryEntry } from "@/types";
 import { resolveItemObjects, normalizeGenerated } from "@/lib/outfit-utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
