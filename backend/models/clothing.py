@@ -30,6 +30,8 @@ class ClothingBase(BaseModel):
     fit: str  # "slim", "regular/straight", "loose/baggy/oversized"
     color: str
     color_code: Optional[str] = None  # e.g., hex code like "#FFFFFF"
+    material: Optional[str] = None  # e.g., "cotton", "polyester"
+    icon_id: Optional[str] = None  # e.g., "tshirt"
     seasons: List[str] = []  # e.g., ["spring", "summer"]
     image_url: Optional[str] = None
     notes: Optional[str] = None
@@ -42,6 +44,8 @@ class ClothingBase(BaseModel):
                 "fit": "oversized",
                 "color": "white",
                 "color_code": "#FFFFFF",
+                "material": "cotton",
+                "icon_id": "tshirt",
                 "seasons": ["spring", "summer", "fall"],
                 "image_url": "",
                 "notes": "A comfortable white oversized t-shirt."

@@ -3,21 +3,13 @@ from fastapi.encoders import jsonable_encoder
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List
 from bson import ObjectId
-import pymongo
 
-# Import your models and database connection
-# Adjust the import path to match your project structure
 from models.catalog import CatalogItemCreate, CatalogItemUpdate, CatalogItemResponse
 from database import get_database
 from utils.auth import get_current_user 
 
 
-# -------------------------------
-
-router = APIRouter(
-    prefix="/catalog",
-    tags=["Catalog Management (Ontology)"]
-)
+router = APIRouter()
 
 @router.post("/", response_description="Add new catalog definition", response_model=CatalogItemResponse)
 async def create_catalog_item(item: CatalogItemCreate = Body(...), current_user: str = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_database)):

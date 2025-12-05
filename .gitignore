@@ -1,3 +1,14 @@
 /backend_error.log
 .env
 ai-fashion-frontend
+pycache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.log
+instance/
+.DS_Store
+.pyc
