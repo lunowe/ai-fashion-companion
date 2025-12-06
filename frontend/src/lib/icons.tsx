@@ -4,11 +4,19 @@ import { cn } from "@/lib/utils";
 
 import TshirtIcon from "@/assets/icons/Tee_4_front.svg?react";
 import JeansIcon from "@/assets/icons/Jeans 1_front.svg?react";
+import DressShirtIcon from "@/assets/icons/DressShirt_front.svg?react";
+// import ButtonUpIcon from "@/assets/icons/Button_Up_Shirt_front.svg?react";
+// import LongsleeveIcon from "@/assets/icons/Long_Sleeve_Shirt_front.svg?react";
+import PoloShirtIcon from "@/assets/icons/Polo_front.svg?react";
+import HenlyIcon from "@/assets/icons/Henley_front.svg?react";
+import CardiganIcon from "@/assets/icons/Cardigan_2_front.svg?react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 const ICON_MAP: Record<string, IconComponent | string> = {
   tshirt: TshirtIcon,
+  polo: PoloShirtIcon,
+  henley: HenlyIcon,
   jeans: JeansIcon,
   shirt: "👔",
   pants: "👖",
@@ -16,7 +24,8 @@ const ICON_MAP: Record<string, IconComponent | string> = {
   sneaker: "👟",
   sweater: "🧶",
   watch: "⌚",
-  "dress-shirt": "👔",
+  "dress-shirt": DressShirtIcon,
+  cardigan: CardiganIcon,
 };
 
 const ASPECT_CLASSES: Record<string, string> = {

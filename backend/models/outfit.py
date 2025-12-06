@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
 from bson import ObjectId
 from .clothing import PyObjectId
@@ -28,6 +28,9 @@ class OutfitBase(BaseModel):
 class Outfit(OutfitBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     user_id: PyObjectId
+    visualization_key: Optional[str] = None  # S3 key for the outfit visualization image
+    visualization_url: Optional[str] = None  # Full URL for the outfit visualization image
+    visualization_status: Optional[Literal["none", "pending", "completed", "failed"]] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
@@ -57,5 +60,22 @@ class OutfitGenRequest(BaseModel):
                 "description": "Something with a vintage vibe",
                 "required_items": ["60d21b4967d0d8992e610c86"],
                 "num_outfits": 3
+            }
+        }
+
+class OutfitUpdate(BaseModel):
+    name: Optional[str] = None
+    style_id: Optional[str] = None
+    items: Optional[List[str]] = None
+    occasion: Optional[str] = None
+    weather: Optional[str] = None
+    ai_generated_reasoning: Optional[str] = None
+    notes: Optional[str] = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Updated Outfit Name",
+                "notes": "Added a new accessory to the outfit."
             }
         }

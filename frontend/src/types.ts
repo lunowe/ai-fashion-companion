@@ -33,6 +33,9 @@ export type Outfit = {
   weather?: string;
   ai_generated_reasoning?: string;
   user_id?: string;
+  visualization_key?: string;
+  visualization_url?: string;
+  visualization_status?: "none" | "pending" | "completed" | "failed";
   notes?: string;
 };
 
@@ -59,6 +62,7 @@ export interface HistoryEntry {
   generated_at: string; // ISO Date string
   request_details: {
     style_name?: string;
+    style_id?: string;
     occasion?: string;
     weather?: string;
     description?: string;

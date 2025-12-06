@@ -31,6 +31,7 @@ export const WardrobeCard = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const colorHex = item.color_code || getColorHex(item.color);
+  console.log("Color Hex for", item.color, "is", colorHex);
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -48,7 +49,7 @@ export const WardrobeCard = ({
               <div className="flex h-full w-full items-center justify-center p-4">
                 <ClothingIcon
                   iconId={item.icon_id}
-                  color={item.color_code || colorHex}
+                  color={colorHex}
                   size="xl"
                   strokeWidth={2}
                   className="text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors"

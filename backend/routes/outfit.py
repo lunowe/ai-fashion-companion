@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status, BackgroundTasks
+from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Dict
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 import traceback
@@ -8,12 +9,41 @@ from datetime import datetime, timezone
 from utils.auth import get_current_user 
 from models.user import UserResponse
 
-from models.outfit import OutfitCreate, OutfitGenRequest, Outfit
+from models.outfit import OutfitCreate, OutfitGenRequest, Outfit, OutfitUpdate
 from database import get_database
 from services.outfit_generator import OutfitGenerator
+from services.outfit_visualizer import OutfitVisualizer
+from utils.s3_service import s3_service
+import uuid
 
 router = APIRouter()
 outfit_generator = OutfitGenerator()
+outfit_visualizer = OutfitVisualizer()
+
+def _add_presigned_url_to_outfit(outfit: Dict) -> Dict:
+    """
+    Checks if the outfit has a 'visualization_key' (S3 key).
+    If present, generates a 'visualization_url' (Pre-signed URL) 
+    and adds it to the response dictionary.
+    """
+    key = outfit.get("visualization_key")
+    
+    if key:
+        # If it's already a full URL (legacy), just copy it to url
+        if key.startswith("http"):
+            outfit["visualization_url"] = key
+        else:
+            try:
+                # Generate pre-signed URL for the specific S3 key
+                # 
+                url = s3_service.generate_presigned_url(key)
+                outfit["visualization_url"] = url
+            except Exception as e:
+                print(f"Error generating presigned URL for outfit {outfit.get('_id')}: {e}")
+                # Fallback: don't set the URL if generation fails
+                pass
+                
+    return outfit
 
 @router.post("/generate", response_description="Generate outfit suggestions")
 async def generate_outfits(
@@ -102,6 +132,7 @@ async def generate_outfits(
             "generated_at": current_time,
             "request_details": {
                 "style_name": style.get("name"),
+                "style_id": str(style.get("_id")),
                 "occasion": outfit_request.occasion,
                 "weather": outfit_request.weather,
                 "description": outfit_request.description
@@ -190,9 +221,13 @@ async def list_outfits(
     user_id = current_user.id
     
     outfits = await db.outfits.find({"user_id": user_id}).to_list(100)
+    results = []
     for outfit in outfits:
         outfit["_id"] = str(outfit["_id"])
-    return outfits
+        outfit = _add_presigned_url_to_outfit(outfit)
+        results.append(outfit)
+
+    return results
 
 @router.get("/{id}", response_description="Get a single outfit")
 async def get_outfit(
@@ -208,7 +243,43 @@ async def get_outfit(
         raise HTTPException(status_code=404, detail=f"Outfit {id} not found or does not belong to user")
     
     outfit["_id"] = str(outfit["_id"])
+    outfit = _add_presigned_url_to_outfit(outfit)
     return outfit
+
+@router.put("/{id}", response_description="Update an outfit")
+async def update_outfit(
+    id: str,
+    request: Request,
+    outfit: OutfitUpdate = Body(...),
+    current_user: UserResponse = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    user_id = current_user.id
+    
+    # Filter out None values
+    outfit_data = {k: v for k, v in outfit.model_dump().items() if v is not None}
+    
+    if len(outfit_data) >= 1:
+        update_result = await db.outfits.update_one(
+            {"_id": ObjectId(id), "user_id": user_id}, 
+            {"$set": outfit_data}
+        )
+        
+        if update_result.modified_count == 1:
+            updated_outfit = await db.outfits.find_one({"_id": ObjectId(id)})
+            if updated_outfit:
+                updated_outfit["_id"] = str(updated_outfit["_id"])
+                # Resolve URL for the response
+                updated_outfit = _add_presigned_url_to_outfit(updated_outfit)
+                return updated_outfit
+    
+    existing_outfit = await db.outfits.find_one({"_id": ObjectId(id), "user_id": user_id})
+    if existing_outfit:
+        existing_outfit["_id"] = str(existing_outfit["_id"])
+        existing_outfit = _add_presigned_url_to_outfit(existing_outfit)
+        return existing_outfit
+        
+    raise HTTPException(status_code=404, detail=f"Outfit {id} not found or not owned by user")
 
 @router.delete("/{id}", response_description="Delete an outfit")
 async def delete_outfit(
@@ -219,8 +290,166 @@ async def delete_outfit(
 ):
     user_id = current_user.id
     
-    result = await db.outfits.delete_one({"_id": ObjectId(id), "user_id": user_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail=f"Outfit {id} not found or does not belong to user")
+    # 1. Fetch first to check ownership and get S3 keys
+    outfit = await db.outfits.find_one({"_id": ObjectId(id), "user_id": user_id})
     
-    return {"detail": "Outfit deleted successfully"}
+    if not outfit:
+        raise HTTPException(status_code=404, detail=f"Outfit {id} not found")
+    
+    # 2. Delete the Visualization Image from S3 if it exists
+    visualization_key = outfit.get("visualization_key")
+    if visualization_key and not visualization_key.startswith("http"):
+        try:
+            success = s3_service.delete_object(visualization_key)
+            if success:
+                print(f"Deleted S3 visualization for outfit {id}: {visualization_key}")
+        except Exception as e:
+            # Log but don't stop the DB deletion
+            print(f"Failed to delete S3 object {visualization_key}: {e}")
+
+    # 3. Delete from Database
+    delete_result = await db.outfits.delete_one({"_id": ObjectId(id)})
+    
+    if delete_result.deleted_count == 1:
+        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    
+    raise HTTPException(status_code=500, detail="Failed to delete outfit")
+
+VISUALIZATION_STATUS = {
+    "none": "none",
+    "pending": "pending", 
+    "completed": "completed",
+    "failed": "failed"
+}
+
+async def run_visualization_task(
+    outfit_id: str,
+    user_id: str,
+    items: list,
+    style_name: str | None,
+    occasion: str | None,
+    weather: str | None,
+    reasoning: str | None,
+    api_key: str | None,
+    db: AsyncIOMotorDatabase 
+):
+    """Background task for generating visualization."""
+
+    try:
+        image_bytes = await outfit_visualizer.generate_image(
+            items=items,
+            reasoning=reasoning,
+            style_name=style_name,
+            occasion=occasion,
+            weather=weather,
+            api_key=api_key
+        )
+        
+        if not image_bytes:
+            await db.outfits.update_one(
+                {"_id": ObjectId(outfit_id)},
+                {"$set": {"visualization_status": "failed"}}
+            )
+            return
+        
+        # Upload to S3
+        s3_key = f"visualizations/{user_id}/{uuid.uuid4()}.png"
+        s3_service.upload_bytes(image_bytes, s3_key, content_type="image/png")
+        
+        # Update outfit
+        await db.outfits.update_one(
+            {"_id": ObjectId(outfit_id)},
+            {"$set": {
+                "visualization_key": s3_key,
+                "visualization_status": "completed"
+            }}
+        )
+        print(f"Visualization completed for outfit {outfit_id}")
+        
+    except Exception as e:
+        print(f"Visualization failed for outfit {outfit_id}: {e}")
+        await db.outfits.update_one(
+            {"_id": ObjectId(outfit_id)},
+            {"$set": {"visualization_status": "failed"}}
+        )
+
+@router.post("/{id}/visualize", response_description="Queue outfit visualization")
+async def visualize_outfit(
+    id: str,
+    background_tasks: BackgroundTasks,
+    current_user: UserResponse = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    user_id = current_user.id
+    
+    outfit = await db.outfits.find_one({"_id": ObjectId(id), "user_id": user_id})
+    if not outfit:
+        raise HTTPException(status_code=404, detail="Outfit not found")
+    
+    # Already completed
+    if outfit.get("visualization_status") == "completed" and outfit.get("visualization_key"):
+        url = s3_service.generate_presigned_url(outfit["visualization_key"])
+        return {"status": "completed", "visualization_url": url}
+    
+    # Already pending
+    if outfit.get("visualization_status") == "pending":
+        return {"status": "pending"}
+    
+    # Fetch items
+    items = []
+    for item_id in outfit.get("items", []):
+        item = await db.clothing.find_one({"_id": ObjectId(item_id)})
+        if item:
+            # Convert ObjectId to string for background task
+            item["_id"] = str(item["_id"])
+            items.append(item)
+    
+    if not items:
+        raise HTTPException(status_code=400, detail="No items found")
+    
+    # Fetch style
+    style = await db.styles.find_one({"_id": ObjectId(outfit.get("style_id"))})
+    
+    # Mark as pending
+    await db.outfits.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {"visualization_status": "pending"}}
+    )
+    
+    # Queue background task
+    background_tasks.add_task(
+        run_visualization_task,
+        outfit_id=id,
+        user_id=user_id,
+        items=items,
+        style_name=style.get("name") if style else None,
+        occasion=outfit.get("occasion"),
+        weather=outfit.get("weather"),
+        reasoning=outfit.get("ai_generated_reasoning"),
+        api_key=current_user.api_key if current_user.role == "byok" else None,
+        db=db
+    )
+    
+    return {"status": "pending"}
+
+@router.get("/{id}/visualization-status", response_description="Check visualization status")
+async def get_visualization_status(
+    id: str,
+    current_user: UserResponse = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    outfit = await db.outfits.find_one(
+        {"_id": ObjectId(id), "user_id": current_user.id},
+        {"visualization_status": 1, "visualization_key": 1}
+    )
+    
+    if not outfit:
+        raise HTTPException(status_code=404, detail="Outfit not found")
+    
+    status = outfit.get("visualization_status", "none")
+    response = {"status": status}
+    
+    if status == "completed" and outfit.get("visualization_key"):
+        response["visualization_url"] = s3_service.generate_presigned_url(outfit["visualization_key"])
+    
+    return response

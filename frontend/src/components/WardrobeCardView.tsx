@@ -17,6 +17,7 @@ const CategoryIcons = {
   all: { name: "All", icon_id: "✦" },
   tops: { name: "Tops", icon_id: "👕" },
   bottoms: { name: "Bottoms", icon_id: "👖" },
+  sweaters: { name: "Sweaters", icon_id: "🧶" },
   outerwear: { name: "Outerwear", icon_id: "🧥" },
   shoes: { name: "Shoes", icon_id: "👟" },
   accessories: { name: "Accessories", icon_id: "⌚" },

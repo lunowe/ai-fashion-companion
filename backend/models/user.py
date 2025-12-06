@@ -18,6 +18,7 @@ class UserInDB(UserBase):
     generation_count: int = 0
     last_reset_date: datetime = Field(default_factory=datetime.utcnow)
     api_key: Optional[str] = None
+    generation_history: Optional[list] = []
 
 class UserResponse(UserBase):
     id: str

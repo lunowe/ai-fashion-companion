@@ -84,7 +84,7 @@ class OutfitGenerator:
             # genai_key = api_key if api_key else settings.OPENAI_API_KEY
             # llm = OpenAIResponses(
             #     model="gpt-5.1",
-            #     reasoning_options={"effort": "medium"},
+            #     reasoning_options={"effort": "low"},
             #     api_key=genai_key
             # )
 

@@ -95,6 +95,16 @@ class S3Service:
         except Exception as e:
             print(f"Error processing image: {e}")
             raise Exception(f"Failed to process image: {str(e)}")
+        
+    def upload_bytes(self, data: bytes, key: str, content_type: str = "application/octet-stream") -> str:
+        """Upload raw bytes to S3."""
+        self.s3_client.put_object(
+            Bucket=self.bucket_name,
+            Key=key,
+            Body=data,
+            ContentType=content_type
+        )
+        return key
     
     async def upload_base64_images(self, base64_images: List[str], folder: str = "styles") -> List[str]:
         """
