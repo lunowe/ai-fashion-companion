@@ -19,6 +19,21 @@ const ICON_MAP: Record<string, IconComponent | string> = {
   "dress-shirt": "👔",
 };
 
+const ASPECT_CLASSES: Record<string, string> = {
+  square: "aspect-square",
+  portrait: "aspect-[3/4]",
+  landscape: "aspect-[4/3]",
+  tall: "aspect-[1/2]",
+};
+
+const SIZE_CLASSES = {
+  sm: "w-12",
+  md: "w-16",
+  lg: "w-24",
+  xl: "w-32",
+  "2xl": "w-64",
+};
+
 const FallbackIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
     <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="2" />
@@ -29,21 +44,23 @@ const FallbackIcon = (props: SVGProps<SVGSVGElement>) => (
 interface ClothingIconProps
   extends Omit<SVGProps<SVGSVGElement>, "color" | "strokeWidth"> {
   iconId: string | null | undefined;
+  aspectRatio?: string | null;
   color?: string | null;
   strokeColor?: string | null;
   strokeWidth?: number | string | null;
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
   className?: string;
-  containerClassName?: string;
   style?: CSSProperties;
 }
 
 export function ClothingIcon({
   iconId,
+  aspectRatio = "square",
   color,
   strokeColor,
   strokeWidth,
-  className = "w-full h-full",
-  containerClassName = "w-16 h-16",
+  size = "md",
+  className,
   style,
   ...props
 }: ClothingIconProps) {
@@ -61,20 +78,37 @@ export function ClothingIcon({
         : undefined,
   } as CSSProperties;
 
-  return (
-    <div className={cn("flex items-center justify-center", containerClassName)}>
-      {typeof Icon === "string" ? (
-        <span className={className}>{Icon}</span>
-      ) : Icon ? (
+  const containerClasses = cn(
+    "flex items-center justify-center",
+    SIZE_CLASSES[size],
+    ASPECT_CLASSES[aspectRatio ?? "square"],
+    className
+  );
+
+  if (typeof Icon === "string") {
+    return (
+      <div className={containerClasses}>
+        <span className="text-2xl">{Icon}</span>
+      </div>
+    );
+  }
+
+  if (Icon) {
+    return (
+      <div className={containerClasses}>
         <Icon
-          className={cn("max-w-full max-h-full", className)}
+          className="w-full h-full"
           style={mergedStyle}
           preserveAspectRatio="xMidYMid meet"
           {...props}
         />
-      ) : (
-        <FallbackIcon className={className} style={mergedStyle} {...props} />
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={containerClasses}>
+      <FallbackIcon className="w-full h-full" style={mergedStyle} {...props} />
     </div>
   );
 }

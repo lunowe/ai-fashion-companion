@@ -7,6 +7,7 @@ export type ClothingItem = {
   color_code?: string;
   fit: string;
   icon_id?: string;
+  icon_aspect_ratio?: string;
   material?: string;
   seasons?: string[];
   image_url?: string;
@@ -71,6 +72,7 @@ export interface CatalogItem {
   type: string;
   icon?: string;
   icon_id?: string;
+  icon_aspect_ratio?: string;
   allowed_colors: string[];
   allowed_fits: string[];
   allowed_materials: string[];

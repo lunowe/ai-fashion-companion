@@ -47,6 +47,7 @@ type CartItem = {
   material: string;
   notes: string;
   icon_id: string;
+  icon_aspect_ratio: string;
 };
 
 type SelectedCatalogItem = CatalogItem & {
@@ -521,6 +522,7 @@ export default function WardrobeShoppingFlow({
             material,
             notes: notes.trim(),
             icon_id: selectedItem.icon_id || "",
+            icon_aspect_ratio: selectedItem.icon_aspect_ratio || "",
           });
         });
       });
@@ -558,6 +560,7 @@ export default function WardrobeShoppingFlow({
             fit: item.fit,
             material: item.material,
             icon_id: item.icon_id,
+            icon_aspect_ratio: item.icon_aspect_ratio,
             notes: item.notes,
           }))
         );

@@ -32,6 +32,7 @@ class ClothingBase(BaseModel):
     color_code: Optional[str] = None  # e.g., hex code like "#FFFFFF"
     material: Optional[str] = None  # e.g., "cotton", "polyester"
     icon_id: Optional[str] = None  # e.g., "tshirt"
+    icon_aspect_ratio: Optional[str] = None  # e.g., "1:1"
     seasons: List[str] = []  # e.g., ["spring", "summer"]
     image_url: Optional[str] = None
     notes: Optional[str] = None

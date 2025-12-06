@@ -77,7 +77,7 @@ class OutfitGenerator:
             genai_key = api_key if api_key else settings.GOOGLE_GENAI_API_KEY
             
             llm = GoogleGenAI(
-                model="gemini-3-pro-preview",
+                model="gemini-2.5-flash",
                 api_key=genai_key
             )
 

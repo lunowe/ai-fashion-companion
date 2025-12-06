@@ -85,6 +85,7 @@ export default function ClothingListPage() {
         fit: item.fit,
         material: item.material || "",
         icon_id: item.icon_id,
+        icon_aspect_ratio: item.icon_aspect_ratio,
         seasons: [], // No longer using seasons
         notes: item.notes || "",
         image_url: "",

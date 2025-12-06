@@ -48,9 +48,8 @@ export const WardrobeCard = ({
               <div className="flex h-full w-full items-center justify-center p-4">
                 <ClothingIcon
                   iconId={item.icon_id}
-                  color={colorHex}
-                  containerClassName="w-32 h-32"
-                  strokeColor="#ffffff"
+                  color={item.color_code || colorHex}
+                  size="xl"
                   strokeWidth={2}
                   className="text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors"
                 />
@@ -136,9 +135,9 @@ export const WardrobeCard = ({
               <div className="flex h-full w-full items-center justify-center rounded-lg">
                 <ClothingIcon
                   iconId={item.icon_id}
-                  color={colorHex}
-                  strokeColor="#000000"
-                  containerClassName="w-64 h-64"
+                  color={item.color_code || colorHex}
+                  size="2xl"
+                  aspectRatio={item.icon_aspect_ratio}
                   strokeWidth={3}
                   className="text-muted-foreground/30"
                 />

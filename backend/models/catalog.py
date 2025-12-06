@@ -7,7 +7,11 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 class CatalogItemBase(BaseModel):
     category: str = Field(..., description="The high-level category (e.g., 'tops', 'bottoms')")
     type: str = Field(..., description="The specific item type (e.g., 't-shirt', 'bomber jacket')")
-    icon_id: str = Field(..., description="Emoji representation (e.g., '👕')")
+    icon_id: Optional[str] = Field(None, description="SVG icon identifier")
+    icon_aspect_ratio: str = Field(
+        default="square",
+        description="Icon aspect ratio: square | portrait | landscape | tall"
+    )
     
     # The Constraints (The Ontology)
     allowed_colors: List[str] = Field(default_factory=list, description="List of valid colors for this item type")
@@ -25,6 +29,7 @@ class CatalogItemUpdate(BaseModel):
     category: Optional[str] = None
     type: Optional[str] = None
     icon_id: Optional[str] = None
+    icon_aspect_ratio: Optional[str] = None
     allowed_colors: Optional[List[str]] = None
     allowed_fits: Optional[List[str]] = None
     allowed_materials: Optional[List[str]] = None
