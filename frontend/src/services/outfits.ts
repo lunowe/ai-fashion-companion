@@ -28,15 +28,25 @@ export interface PaginatedOutfitsResponse {
   has_more: boolean;
 }
 
-export async function listOutfits(
-  cursor?: string | null,
-  limit: number = 12
-): Promise<PaginatedOutfitsResponse> {
-  const params = new URLSearchParams();
-  if (cursor) params.append("cursor", cursor);
-  params.append("limit", limit.toString());
+export interface ListOutfitsParams {
+  cursor?: string | null;
+  limit?: number;
+  style_id?: string | null;
+  search?: string | null;
+}
 
-  const { data } = await api.get(`/api/outfits/?${params.toString()}`);
+export async function listOutfits(
+  params: ListOutfitsParams = {}
+): Promise<PaginatedOutfitsResponse> {
+  const { cursor, limit = 12, style_id, search } = params;
+  const urlParams = new URLSearchParams();
+
+  if (cursor) urlParams.append("cursor", cursor);
+  urlParams.append("limit", limit.toString());
+  if (style_id) urlParams.append("style_id", style_id);
+  if (search) urlParams.append("search", search);
+
+  const { data } = await api.get(`/api/outfits/?${urlParams.toString()}`);
   return data;
 }
 

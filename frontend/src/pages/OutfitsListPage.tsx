@@ -11,10 +11,9 @@ import {
   Search,
   ImagePlus,
   RefreshCw,
-  X,
 } from "lucide-react";
 
-import { listOutfits, deleteOutfit, type PaginatedOutfitsResponse } from "@/services/outfits";
+import { listOutfits, deleteOutfit } from "@/services/outfits";
 import { listClothing } from "@/services/clothing";
 import { listStyles } from "@/services/styles";
 import type { Outfit, ClothingItem } from "@/types";
@@ -42,6 +41,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ClothingIcon } from "@/lib/icons";
+
+// ------------------------------------------------------------------
+// Custom Hook: Debounce
+// ------------------------------------------------------------------
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 // ------------------------------------------------------------------
 // Sub-Component: Mini Outfit Grid (The Visual Hero)
@@ -78,7 +94,7 @@ const MiniOutfitPreview = ({ items }: { items: ClothingItem[] }) => {
 };
 
 // ------------------------------------------------------------------
-// Sub-Component: Outfit Card (Redesigned to match WardrobeCard)
+// Sub-Component: Outfit Card (with cache invalidation on visual complete)
 // ------------------------------------------------------------------
 
 function OutfitCard({
@@ -87,17 +103,20 @@ function OutfitCard({
   styleName,
   onView,
   onDelete,
+  onVisualizationComplete,
 }: {
   outfit: Outfit;
   items: ClothingItem[];
   styleName: string;
   onView: (outfit: Outfit) => void;
   onDelete: (id: string) => void;
+  onVisualizationComplete: () => void;
 }) {
   const { status, url, trigger } = useVisualization(
     outfit._id,
     outfit.visualization_status ||
-      (outfit.visualization_key ? "completed" : "none")
+      (outfit.visualization_key ? "completed" : "none"),
+    onVisualizationComplete
   );
 
   const visualizationUrl = url || outfit.visualization_url;
@@ -237,17 +256,20 @@ function OutfitDetailView({
   styleName,
   onDelete,
   onClose,
+  onVisualizationComplete,
 }: {
   outfit: Outfit;
   items: ClothingItem[];
   styleName: string;
   onDelete: (id: string) => void;
   onClose: () => void;
+  onVisualizationComplete: () => void;
 }) {
-  const { status, url, trigger, refresh } = useVisualization(
+  const { status, url, trigger } = useVisualization(
     outfit._id,
     outfit.visualization_status ||
-      (outfit.visualization_key ? "completed" : "none")
+      (outfit.visualization_key ? "completed" : "none"),
+    onVisualizationComplete
   );
 
   const visualizationUrl = url || outfit.visualization_url;
@@ -318,7 +340,7 @@ function OutfitDetailView({
         <div className="shrink-0 p-4 border-t border-border/30 bg-background/50 backdrop-blur-sm">
           {canGenerate && (
             <Button
-              onClick={trigger}
+              onClick={() => trigger()}
               className="w-full gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
               size="lg"
             >
@@ -499,21 +521,34 @@ export default function OutfitsListPage() {
   const [selectedStyle, setSelectedStyle] = useState("all");
   const [gridCols, setGridCols] = useState<1 | 2>(2); // Mobile grid toggle
 
+  // Debounce search for server-side filtering
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   // Infinite scroll ref
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // 1. Fetch Data with Infinite Query
+  // Build filter params for query
+  const filterParams = useMemo(() => ({
+    style_id: selectedStyle !== "all" ? selectedStyle : null,
+    search: debouncedSearch.trim() || null,
+  }), [selectedStyle, debouncedSearch]);
+
+  // 1. Fetch Data with Infinite Query (server-side filtering)
   const {
     data,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isLoading: isOutfitsLoading,
-    isError,
   } = useInfiniteQuery({
-    queryKey: ["outfits"],
+    queryKey: ["outfits", filterParams],
     queryFn: async ({ pageParam }) => {
-      return listOutfits(pageParam, 12);
+      return listOutfits({
+        cursor: pageParam,
+        limit: 12,
+        style_id: filterParams.style_id,
+        search: filterParams.search,
+      });
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
@@ -572,7 +607,13 @@ export default function OutfitsListPage() {
     onError: () => toast.error("Could not delete outfit"),
   });
 
-  // 5. Helpers
+  // 5. Callback for when visualization completes
+  const handleVisualizationComplete = useCallback(() => {
+    // Invalidate all outfit queries to refresh the data
+    qc.invalidateQueries({ queryKey: ["outfits"] });
+  }, [qc]);
+
+  // 6. Helpers
   const getStyleName = (id?: string) =>
     (styles ?? []).find((s) => s._id === id)?.name ?? "Unknown Style";
 
@@ -585,29 +626,6 @@ export default function OutfitsListPage() {
     setViewOutfit(outfit);
     setOpen(true);
   };
-
-  // 6. Filtering Logic
-  const filteredOutfits = useMemo(() => {
-    let filtered = allOutfits;
-
-    // Filter by Style Pill
-    if (selectedStyle !== "all") {
-      filtered = filtered.filter((o) => o.style_id === selectedStyle);
-    }
-
-    // Filter by Search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (o) =>
-          o.name?.toLowerCase().includes(query) ||
-          o.occasion?.toLowerCase().includes(query) ||
-          o.weather?.toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  }, [allOutfits, selectedStyle, searchQuery]);
 
   // Loading State
   if (isOutfitsLoading || isClothingLoading) {
@@ -647,7 +665,7 @@ export default function OutfitsListPage() {
             {/* Mobile Grid Toggle */}
             <div className="flex items-center gap-2 sm:hidden">
               <span className="text-xs text-muted-foreground">
-                {filteredOutfits.length} items
+                {allOutfits.length} items
               </span>
               <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
                 <button
@@ -721,15 +739,15 @@ export default function OutfitsListPage() {
 
         {/* --- Results Count (Desktop) --- */}
         <div className="hidden sm:block text-sm text-muted-foreground">
-          {filteredOutfits.length === 0
+          {allOutfits.length === 0
             ? "No outfits found"
-            : `Showing ${filteredOutfits.length} ${
-                filteredOutfits.length === 1 ? "outfit" : "outfits"
+            : `Showing ${allOutfits.length}${hasNextPage ? "+" : ""} ${
+                allOutfits.length === 1 ? "outfit" : "outfits"
               }`}
         </div>
 
         {/* --- Grid --- */}
-        {filteredOutfits.length === 0 ? (
+        {allOutfits.length === 0 && !isOutfitsLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-4 rounded-xl border-2 border-dashed border-muted bg-muted/10 p-12">
             <div className="p-4 bg-muted rounded-full">
               <Search className="h-8 w-8 text-muted-foreground" />
@@ -741,8 +759,11 @@ export default function OutfitsListPage() {
               Try adjusting your filters or search query, or generate a new
               outfit in the Stylist tab.
             </p>
-            {selectedStyle !== "all" && (
-              <Button variant="outline" onClick={() => setSelectedStyle("all")}>
+            {(selectedStyle !== "all" || searchQuery) && (
+              <Button variant="outline" onClick={() => {
+                setSelectedStyle("all");
+                setSearchQuery("");
+              }}>
                 Clear Filters
               </Button>
             )}
@@ -754,7 +775,7 @@ export default function OutfitsListPage() {
                 gridCols === 1 ? "grid-cols-1" : "grid-cols-2"
               }`}
             >
-              {filteredOutfits.map((outfit) => (
+              {allOutfits.map((outfit) => (
                 <OutfitCard
                   key={outfit._id}
                   outfit={outfit}
@@ -762,6 +783,7 @@ export default function OutfitsListPage() {
                   styleName={getStyleName(outfit.style_id)}
                   onView={handleOpenView}
                   onDelete={(id) => delMut.mutate(id)}
+                  onVisualizationComplete={handleVisualizationComplete}
                 />
               ))}
             </div>
@@ -794,6 +816,7 @@ export default function OutfitsListPage() {
               styleName={getStyleName(viewOutfit.style_id)}
               onDelete={(id) => delMut.mutate(id)}
               onClose={() => setOpen(false)}
+              onVisualizationComplete={handleVisualizationComplete}
             />
           )}
         </DialogContent>

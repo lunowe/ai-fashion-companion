@@ -218,7 +218,9 @@ async def list_outfits(
     current_user: UserResponse = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database),
     cursor: str = None,
-    limit: int = 12
+    limit: int = 12,
+    style_id: str = None,
+    search: str = None
 ):
     user_id = current_user.id
 
@@ -227,6 +229,19 @@ async def list_outfits(
 
     # Build query - sort by created_at descending (newest first)
     query = {"user_id": user_id}
+
+    # Add style filter
+    if style_id:
+        query["style_id"] = style_id
+
+    # Add search filter (name, occasion, weather)
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query["$or"] = [
+            {"name": search_regex},
+            {"occasion": search_regex},
+            {"weather": search_regex}
+        ]
 
     # If cursor provided, get outfits older than the cursor
     if cursor:

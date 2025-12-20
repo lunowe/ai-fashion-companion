@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   triggerVisualization,
   getVisualizationStatus,
@@ -8,12 +8,16 @@ type VisualizationStatus = "none" | "pending" | "completed" | "failed";
 
 export function useVisualization(
   outfitId: string,
-  initialStatus?: VisualizationStatus
+  initialStatus?: VisualizationStatus,
+  onComplete?: () => void
 ) {
   const [status, setStatus] = useState<VisualizationStatus>(
     initialStatus || "none"
   );
   const [url, setUrl] = useState<string | null>(null);
+
+  // Track previous status to detect completion
+  const prevStatusRef = useRef<VisualizationStatus>(initialStatus || "none");
 
   const poll = useCallback(async () => {
     try {
@@ -41,6 +45,18 @@ export function useVisualization(
     return () => clearInterval(interval);
   }, [status, poll]);
 
+  // Call onComplete when status changes from pending to completed
+  useEffect(() => {
+    if (
+      prevStatusRef.current === "pending" &&
+      status === "completed" &&
+      onComplete
+    ) {
+      onComplete();
+    }
+    prevStatusRef.current = status;
+  }, [status, onComplete]);
+
   const trigger = useCallback(async (regenerate: boolean = false) => {
     // If regenerating, clear the current URL so UI updates immediately
     if (regenerate) {
@@ -50,11 +66,17 @@ export function useVisualization(
     try {
       const res = await triggerVisualization(outfitId, regenerate);
       setStatus(res.status as VisualizationStatus);
-      if (res.visualization_url) setUrl(res.visualization_url);
+      if (res.visualization_url) {
+        setUrl(res.visualization_url);
+        // If immediately completed (shouldn't happen with generation, but just in case)
+        if (res.status === "completed" && onComplete) {
+          onComplete();
+        }
+      }
     } catch {
       setStatus("failed");
     }
-  }, [outfitId]);
+  }, [outfitId, onComplete]);
 
   return { status, url, trigger, refresh: poll };
 }
