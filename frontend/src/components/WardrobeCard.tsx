@@ -63,7 +63,7 @@ export const WardrobeCard = ({
               {/* Title & Fit */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h3 className="text-lg font-semibold capitalize leading-tight truncate">
+                  <h3 className="text-lg font-semibold capitalize leading-tight truncate group-hover:text-primary">
                     {item.type}
                   </h3>
                   <p className="text-sm text-muted-foreground capitalize">

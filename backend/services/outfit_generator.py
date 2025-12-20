@@ -4,9 +4,10 @@ from typing import List, Dict, Any, Optional
 from config import settings
 from models.clothing import ClothingItem
 from models.style import Style
-from llama_index.llms.openai import OpenAIResponses
-from llama_index.llms.google_genai import GoogleGenAI
+# from llama_index.llms.openai import OpenAIResponses
+# from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.core.llms import ChatMessage, TextBlock, ImageBlock
+from llama_index.llms.openrouter import OpenRouter
 from pathlib import Path
 import os
 import traceback
@@ -74,19 +75,14 @@ class OutfitGenerator:
         print(f"Generated prompt for outfit generation:\n{prompt}\n")        
         try:
             # Use user's API key if provided (BYOK), otherwise use system key
-            genai_key = api_key if api_key else settings.GOOGLE_GENAI_API_KEY
+            api_key = api_key if api_key else settings.OPENROUTER_API_KEY
             
-            llm = GoogleGenAI(
-                model="gemini-2.5-flash",
-                api_key=genai_key
+            llm = OpenRouter(
+                api_key=api_key,
+                max_tokens=30000,
+                context_window=128000,
+                model="x-ai/grok-4.1-fast",
             )
-
-            # genai_key = api_key if api_key else settings.OPENAI_API_KEY
-            # llm = OpenAIResponses(
-            #     model="gpt-5.1",
-            #     reasoning_options={"effort": "low"},
-            #     api_key=genai_key
-            # )
 
             blocks = []
             if style.get('reference_images'):

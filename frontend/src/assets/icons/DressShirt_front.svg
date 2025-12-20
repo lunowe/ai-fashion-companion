@@ -29,7 +29,7 @@
       }
 
       .cls-3, .cls-4 {
-        stroke-miterlimit: 2.61;
+        stroke-miterlimit: 1;
         stroke-width:var(--icon-stroke-width, 0.8px)
       }
     </style>

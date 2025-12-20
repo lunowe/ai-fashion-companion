@@ -10,6 +10,7 @@ import DressShirtIcon from "@/assets/icons/DressShirt_front.svg?react";
 import PoloShirtIcon from "@/assets/icons/Polo_front.svg?react";
 import HenlyIcon from "@/assets/icons/Henley_front.svg?react";
 import CardiganIcon from "@/assets/icons/Cardigan_2_front.svg?react";
+import TrousersIcon from "@/assets/icons/Sweats_46_front.svg?react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -26,6 +27,7 @@ const ICON_MAP: Record<string, IconComponent | string> = {
   watch: "⌚",
   "dress-shirt": DressShirtIcon,
   cardigan: CardiganIcon,
+  trousers: TrousersIcon,
 };
 
 const ASPECT_CLASSES: Record<string, string> = {

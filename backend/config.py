@@ -9,6 +9,7 @@ class Settings(BaseModel):
     DB_NAME: str = os.getenv("DATABASE_NAME")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
     GOOGLE_GENAI_API_KEY: str = os.getenv("GOOGLE_GENAI_API_KEY")
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY")
     
     # Auth settings
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here") # Change in production

@@ -3,12 +3,15 @@
   <defs>
     <style>
       .cls-1, .cls-2 {
-        stroke-width:var(--icon-stroke-width, 0.8px)
+        stroke:var(--icon-stroke, #000);
+        stroke-miterlimit: 2.61;
+        stroke-width:var(--icon-stroke-width, 0.8px);
       }
 
       .cls-1, .cls-2, .cls-3, .cls-4 {
         stroke:var(--icon-stroke, #000);
         stroke-miterlimit: 2.61;
+        stroke-width:var(--icon-stroke-width, 0.8px);
       }
 
       .cls-1, .cls-3 {
@@ -16,6 +19,8 @@
       }
 
       .cls-5 {
+        stroke:var(--icon-stroke, #000);
+        stroke-miterlimit: 1;
         stroke-width:var(--icon-stroke-width, 0.8px)
       }
 

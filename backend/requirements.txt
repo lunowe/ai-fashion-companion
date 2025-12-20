@@ -11,5 +11,4 @@ python-jose[cryptography]
 python-multipart
 boto3
 llama-index
-llama-index-llms-google-genai
-llama-index-llms-openai
+llama-index-llms-openrouter
