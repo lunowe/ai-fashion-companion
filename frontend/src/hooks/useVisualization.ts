@@ -41,16 +41,20 @@ export function useVisualization(
     return () => clearInterval(interval);
   }, [status, poll]);
 
-  const trigger = async () => {
+  const trigger = useCallback(async (regenerate: boolean = false) => {
+    // If regenerating, clear the current URL so UI updates immediately
+    if (regenerate) {
+      setUrl(null);
+    }
     setStatus("pending");
     try {
-      const res = await triggerVisualization(outfitId);
+      const res = await triggerVisualization(outfitId, regenerate);
       setStatus(res.status as VisualizationStatus);
       if (res.visualization_url) setUrl(res.visualization_url);
     } catch {
       setStatus("failed");
     }
-  };
+  }, [outfitId]);
 
   return { status, url, trigger, refresh: poll };
 }

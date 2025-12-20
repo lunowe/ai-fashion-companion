@@ -212,22 +212,54 @@ async def save_outfit(
     
     return created_outfit
 
-@router.get("/", response_description="List all user outfits")
+@router.get("/", response_description="List all user outfits with pagination")
 async def list_outfits(
     request: Request,
     current_user: UserResponse = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    cursor: str = None,
+    limit: int = 12
 ):
     user_id = current_user.id
-    
-    outfits = await db.outfits.find({"user_id": user_id}).to_list(100)
+
+    # Cap the limit to prevent abuse
+    limit = min(limit, 50)
+
+    # Build query - sort by created_at descending (newest first)
+    query = {"user_id": user_id}
+
+    # If cursor provided, get outfits older than the cursor
+    if cursor:
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor)}
+        except Exception:
+            pass  # Invalid cursor, ignore
+
+    # Fetch one extra to determine if there are more results
+    outfits = await db.outfits.find(query).sort("_id", -1).to_list(limit + 1)
+
+    # Determine if there's a next page
+    has_more = len(outfits) > limit
+    if has_more:
+        outfits = outfits[:limit]  # Remove the extra item
+
     results = []
+    next_cursor = None
+
     for outfit in outfits:
         outfit["_id"] = str(outfit["_id"])
         outfit = _add_presigned_url_to_outfit(outfit)
         results.append(outfit)
 
-    return results
+    # Set next cursor to the last item's ID
+    if results and has_more:
+        next_cursor = results[-1]["_id"]
+
+    return {
+        "outfits": results,
+        "next_cursor": next_cursor,
+        "has_more": has_more
+    }
 
 @router.get("/{id}", response_description="Get a single outfit")
 async def get_outfit(
@@ -378,22 +410,33 @@ async def visualize_outfit(
     id: str,
     background_tasks: BackgroundTasks,
     current_user: UserResponse = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    regenerate: bool = False
 ):
     user_id = current_user.id
-    
+
     outfit = await db.outfits.find_one({"_id": ObjectId(id), "user_id": user_id})
     if not outfit:
         raise HTTPException(status_code=404, detail="Outfit not found")
-    
-    # Already completed
-    if outfit.get("visualization_status") == "completed" and outfit.get("visualization_key"):
+
+    # Already completed - return existing unless regenerate requested
+    if outfit.get("visualization_status") == "completed" and outfit.get("visualization_key") and not regenerate:
         url = s3_service.generate_presigned_url(outfit["visualization_key"])
         return {"status": "completed", "visualization_url": url}
-    
+
     # Already pending
     if outfit.get("visualization_status") == "pending":
         return {"status": "pending"}
+
+    # If regenerating, delete old S3 object
+    if regenerate and outfit.get("visualization_key"):
+        old_key = outfit.get("visualization_key")
+        if old_key and not old_key.startswith("http"):
+            try:
+                s3_service.delete_object(old_key)
+                print(f"Deleted old visualization for regeneration: {old_key}")
+            except Exception as e:
+                print(f"Failed to delete old visualization: {e}")
     
     # Fetch items
     items = []

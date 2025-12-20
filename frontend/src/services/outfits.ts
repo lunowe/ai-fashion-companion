@@ -22,8 +22,21 @@ export async function saveOutfit(payload: OutfitCreate): Promise<Outfit> {
   return data;
 }
 
-export async function listOutfits(): Promise<Outfit[]> {
-  const { data } = await api.get("/api/outfits/");
+export interface PaginatedOutfitsResponse {
+  outfits: Outfit[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
+export async function listOutfits(
+  cursor?: string | null,
+  limit: number = 12
+): Promise<PaginatedOutfitsResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.append("cursor", cursor);
+  params.append("limit", limit.toString());
+
+  const { data } = await api.get(`/api/outfits/?${params.toString()}`);
   return data;
 }
 
@@ -37,9 +50,11 @@ export const getGenerationHistory = async (): Promise<HistoryEntry[]> => {
 };
 
 export async function triggerVisualization(
-  id: string
+  id: string,
+  regenerate: boolean = false
 ): Promise<{ status: string; visualization_url?: string }> {
-  const { data } = await api.post(`/api/outfits/${id}/visualize`);
+  const params = regenerate ? "?regenerate=true" : "";
+  const { data } = await api.post(`/api/outfits/${id}/visualize${params}`);
   return data;
 }
 
