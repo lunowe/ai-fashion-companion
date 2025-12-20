@@ -34,9 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 try {
                     const { data } = await api.get("/api/auth/users/me");
                     setUser(data);
-                } catch (error) {
+                } catch (error: any) {
                     console.error("Failed to fetch user", error);
-                    logout();
+                    // Only logout on 401 errors (unauthorized/invalid token)
+                    // Other errors (network, server) should not trigger logout
+                    // as the axios interceptor may have already handled token refresh
+                    if (error?.response?.status === 401) {
+                        logout();
+                    }
                 }
             }
             setIsLoading(false);
