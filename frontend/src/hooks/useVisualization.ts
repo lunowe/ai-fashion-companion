@@ -9,23 +9,41 @@ type VisualizationStatus = "none" | "pending" | "completed" | "failed";
 export function useVisualization(
   outfitId: string,
   initialStatus?: VisualizationStatus,
+  initialUrl?: string | null,
   onComplete?: () => void
 ) {
   const [status, setStatus] = useState<VisualizationStatus>(
     initialStatus || "none"
   );
-  const [url, setUrl] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(initialUrl || null);
+  const [isPolling, setIsPolling] = useState(false);
 
-  // Track previous status to detect completion
-  const prevStatusRef = useRef<VisualizationStatus>(initialStatus || "none");
+  // Track if we've triggered from this hook instance
+  const hasTriggeredRef = useRef(false);
 
-  const poll = useCallback(async () => {
+  // Sync with external data when it changes (e.g., from query refresh)
+  useEffect(() => {
+    // Only sync if we haven't triggered locally and aren't polling
+    if (!hasTriggeredRef.current && !isPolling) {
+      if (initialStatus) setStatus(initialStatus);
+      if (initialUrl) setUrl(initialUrl);
+    }
+  }, [initialStatus, initialUrl, isPolling]);
+
+  // Polling function
+  const poll = useCallback(async (): Promise<VisualizationStatus> => {
     try {
       const res = await getVisualizationStatus(outfitId);
-      setStatus(res.status as VisualizationStatus);
-      if (res.visualization_url) setUrl(res.visualization_url);
-      return res.status;
-    } catch {
+      const newStatus = res.status as VisualizationStatus;
+
+      setStatus(newStatus);
+      if (res.visualization_url) {
+        setUrl(res.visualization_url);
+      }
+
+      return newStatus;
+    } catch (error) {
+      console.error("Visualization poll error:", error);
       setStatus("failed");
       return "failed";
     }
@@ -33,50 +51,81 @@ export function useVisualization(
 
   // Poll while pending
   useEffect(() => {
-    if (status !== "pending") return;
-
-    const interval = setInterval(async () => {
-      const newStatus = await poll();
-      if (newStatus !== "pending") {
-        clearInterval(interval);
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [status, poll]);
-
-  // Call onComplete when status changes from pending to completed
-  useEffect(() => {
-    if (
-      prevStatusRef.current === "pending" &&
-      status === "completed" &&
-      onComplete
-    ) {
-      onComplete();
+    if (status !== "pending") {
+      setIsPolling(false);
+      return;
     }
-    prevStatusRef.current = status;
-  }, [status, onComplete]);
 
+    setIsPolling(true);
+    let isCancelled = false;
+
+    const pollInterval = async () => {
+      while (!isCancelled) {
+        await new Promise((resolve) => setTimeout(resolve, 2500)); // Poll every 2.5 seconds
+
+        if (isCancelled) break;
+
+        const newStatus = await poll();
+
+        if (newStatus !== "pending") {
+          // Generation completed or failed
+          setIsPolling(false);
+          hasTriggeredRef.current = false;
+
+          if (newStatus === "completed" && onComplete) {
+            onComplete();
+          }
+          break;
+        }
+      }
+    };
+
+    pollInterval();
+
+    return () => {
+      isCancelled = true;
+      setIsPolling(false);
+    };
+  }, [status, poll, onComplete]);
+
+  // Trigger visualization generation
   const trigger = useCallback(async (regenerate: boolean = false) => {
-    // If regenerating, clear the current URL so UI updates immediately
+    hasTriggeredRef.current = true;
+
+    // Clear URL immediately when regenerating
     if (regenerate) {
       setUrl(null);
     }
+
     setStatus("pending");
+
     try {
       const res = await triggerVisualization(outfitId, regenerate);
-      setStatus(res.status as VisualizationStatus);
+      const newStatus = res.status as VisualizationStatus;
+
+      setStatus(newStatus);
+
       if (res.visualization_url) {
         setUrl(res.visualization_url);
-        // If immediately completed (shouldn't happen with generation, but just in case)
-        if (res.status === "completed" && onComplete) {
-          onComplete();
-        }
       }
-    } catch {
+
+      // If immediately completed (unlikely but possible)
+      if (newStatus === "completed") {
+        hasTriggeredRef.current = false;
+        if (onComplete) onComplete();
+      }
+    } catch (error) {
+      console.error("Visualization trigger error:", error);
       setStatus("failed");
+      hasTriggeredRef.current = false;
     }
   }, [outfitId, onComplete]);
 
-  return { status, url, trigger, refresh: poll };
+  return {
+    status,
+    url,
+    trigger,
+    refresh: poll,
+    isPolling
+  };
 }

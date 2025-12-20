@@ -112,13 +112,18 @@ function OutfitCard({
   onDelete: (id: string) => void;
   onVisualizationComplete: () => void;
 }) {
+  // Determine initial status from outfit data
+  const initialStatus = outfit.visualization_status ||
+    (outfit.visualization_key ? "completed" : "none");
+
   const { status, url, trigger } = useVisualization(
     outfit._id,
-    outfit.visualization_status ||
-      (outfit.visualization_key ? "completed" : "none"),
+    initialStatus,
+    outfit.visualization_url,
     onVisualizationComplete
   );
 
+  // Use hook's url first, fallback to outfit data
   const visualizationUrl = url || outfit.visualization_url;
   const isPending = status === "pending";
   const hasVisual = status === "completed" && visualizationUrl;
@@ -265,13 +270,18 @@ function OutfitDetailView({
   onClose: () => void;
   onVisualizationComplete: () => void;
 }) {
-  const { status, url, trigger } = useVisualization(
+  // Determine initial status from outfit data
+  const initialStatus = outfit.visualization_status ||
+    (outfit.visualization_key ? "completed" : "none");
+
+  const { status, url, trigger, isPolling } = useVisualization(
     outfit._id,
-    outfit.visualization_status ||
-      (outfit.visualization_key ? "completed" : "none"),
+    initialStatus,
+    outfit.visualization_url,
     onVisualizationComplete
   );
 
+  // Use hook's url first, fallback to outfit data
   const visualizationUrl = url || outfit.visualization_url;
   const isPending = status === "pending";
   const hasVisual = status === "completed" && visualizationUrl;
@@ -349,10 +359,17 @@ function OutfitDetailView({
             </Button>
           )}
           {isPending && (
-            <Button disabled className="w-full gap-2" size="lg" variant="secondary">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating...
-            </Button>
+            <div className="space-y-2">
+              <Button disabled className="w-full gap-2" size="lg" variant="secondary">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </Button>
+              {isPolling && (
+                <p className="text-xs text-center text-muted-foreground animate-pulse">
+                  Checking for updates...
+                </p>
+              )}
+            </div>
           )}
           {canRegenerate && (
             <Button
@@ -627,6 +644,12 @@ export default function OutfitsListPage() {
     setOpen(true);
   };
 
+  // Keep viewOutfit synced with latest data from query
+  const currentViewOutfit = useMemo(() => {
+    if (!viewOutfit || !allOutfits.length) return viewOutfit;
+    return allOutfits.find((o) => o._id === viewOutfit._id) || viewOutfit;
+  }, [viewOutfit, allOutfits]);
+
   // Loading State
   if (isOutfitsLoading || isClothingLoading) {
     return (
@@ -809,11 +832,11 @@ export default function OutfitsListPage() {
       {/* --- Detail Dialog --- */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-5xl! p-0 overflow-hidden h-[90vh] md:h-[85vh] flex flex-col gap-0">
-          {viewOutfit && (
+          {currentViewOutfit && (
             <OutfitDetailView
-              outfit={viewOutfit}
-              items={getOutfitItems(viewOutfit.items)}
-              styleName={getStyleName(viewOutfit.style_id)}
+              outfit={currentViewOutfit}
+              items={getOutfitItems(currentViewOutfit.items)}
+              styleName={getStyleName(currentViewOutfit.style_id)}
               onDelete={(id) => delMut.mutate(id)}
               onClose={() => setOpen(false)}
               onVisualizationComplete={handleVisualizationComplete}
