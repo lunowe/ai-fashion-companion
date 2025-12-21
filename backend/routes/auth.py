@@ -52,7 +52,7 @@ async def register(user: UserCreate, request: Request):
         {
             "$set": {
                 "is_used": True,
-                "used_at": datetime.utcnow(),
+                "used_at": datetime.now(),
                 "used_by": str(new_user.inserted_id)
             }
         }
@@ -66,7 +66,7 @@ async def register(user: UserCreate, request: Request):
         created_at=created_user["created_at"],
         role=created_user.get("role", "free"),
         generation_count=created_user.get("generation_count", 0),
-        last_reset_date=created_user.get("last_reset_date", datetime.utcnow()),
+        last_reset_date=created_user.get("last_reset_date", datetime.now()),
         api_key=created_user.get("api_key")
     )
 
@@ -99,7 +99,7 @@ async def update_user_settings(
         created_at=updated_user["created_at"],
         role=updated_user.get("role", "free"),
         generation_count=updated_user.get("generation_count", 0),
-        last_reset_date=updated_user.get("last_reset_date", datetime.utcnow()),
+        last_reset_date=updated_user.get("last_reset_date", datetime.now()),
         api_key=updated_user.get("api_key")
     )
 
@@ -174,6 +174,6 @@ async def read_users_me(
         created_at=user["created_at"],
         role=user.get("role", "free"),
         generation_count=user.get("generation_count", 0),
-        last_reset_date=user.get("last_reset_date", datetime.utcnow()),
+        last_reset_date=user.get("last_reset_date", datetime.now()),
         api_key=user.get("api_key")
     )

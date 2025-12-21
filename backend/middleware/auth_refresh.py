@@ -17,10 +17,10 @@ class TokenRefreshMiddleware(BaseHTTPMiddleware):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             # Use utcfromtimestamp to ensure consistent UTC comparison
-            exp = datetime.utcfromtimestamp(payload["exp"])
+            exp = datetime.fromtimestamp(payload["exp"])
 
             # If token expires within 5 minutes, issue new tokens
-            if exp - datetime.utcnow() < timedelta(minutes=5):
+            if exp - datetime.now() < timedelta(minutes=5):
                 username = payload.get("sub")
                 # Use configured expiration times instead of defaults
                 access_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
