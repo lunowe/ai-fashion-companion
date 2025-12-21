@@ -6,7 +6,6 @@ import {
   Sparkles,
   Calendar,
   CloudSun,
-  MoreHorizontal,
   Loader2,
   Search,
   ImagePlus,
@@ -32,12 +31,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -60,12 +53,14 @@ function OutfitDetailContent({
   getOutfitItems,
   getStyleName,
   onDelete,
+  onEdit, // Added onEdit prop
   onClose,
 }: {
   outfit: Outfit;
   getOutfitItems: (itemIds: string[]) => ClothingItem[];
   getStyleName: (id?: string) => string;
   onDelete: (id: string) => void;
+  onEdit: (outfit: Outfit) => void; // Added type definition
   onClose: () => void;
 }) {
   const { status, url, trigger } = useVisualization(
@@ -84,7 +79,7 @@ function OutfitDetailContent({
   return (
     <div className="flex flex-col md:flex-row h-full w-full">
       {/* --- LEFT SIDE: VISUALS --- */}
-      <div className="w-full md:w-[55%] h-80 md:h-full bg-muted/10 border-b md:border-b-0 md:border-r border-border/50 flex flex-col shrink-0">
+      <div className="w-full md:w-[55%] h-80 md:h-full bg-background border-b md:border-b-0 md:border-r border-border/50 flex flex-col shrink-0">
         <Tabs defaultValue={defaultTab} className="w-full h-full flex flex-col">
           <div className="p-4 pb-0 shrink-0 flex items-center justify-between gap-2">
             <TabsList className="grid w-full grid-cols-2">
@@ -95,7 +90,7 @@ function OutfitDetailContent({
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-hidden relative p-4">
+          <div className="flex-1 overflow-hidden relative p-4 bg-background">
             <TabsContent
               value="grid"
               className="h-full w-full m-0 data-[state=active]:flex items-center justify-center overflow-y-auto"
@@ -121,10 +116,10 @@ function OutfitDetailContent({
 
             <TabsContent
               value="visual"
-              className="h-full w-full m-0 data-[state=active]:flex flex-col items-center justify-center gap-4"
+              className="h-full w-full m-0 data-[state=active]:flex flex-col items-center justify-center gap-4 bg-background"
             >
               {isPending ? (
-                <div className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-muted-foreground/25 rounded-xl w-full h-full max-h-96 bg-muted/30">
+                <div className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-muted-foreground/25 rounded-xl w-full h-full max-h-96">
                   <Loader2 className="w-10 h-10 animate-spin text-primary" />
                   <div className="text-center">
                     <p className="text-sm font-medium">Generating visual...</p>
@@ -135,11 +130,11 @@ function OutfitDetailContent({
                 </div>
               ) : hasVisual ? (
                 <>
-                  <div className="relative w-full flex-1 flex items-center justify-center rounded-lg overflow-hidden border border-border/50 bg-black/5">
+                  <div className="relative w-full flex-1 flex items-center justify-center rounded-lg overflow-hidden border-none bg-background">
                     <img
                       src={visualizationUrl}
                       alt="AI Generated Outfit"
-                      className="max-w-full max-h-full object-contain"
+                      className="max-w-full max-h-full object-contain rounded-md "
                     />
                   </div>
                   <Button
@@ -276,11 +271,18 @@ function OutfitDetailContent({
                     </div>
 
                     {item.color && (
-                      <div
-                        className="w-3 h-3 rounded-full border border-border/40 shadow-sm"
-                        style={{ backgroundColor: item.color }}
-                        title={item.color}
-                      />
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="capitalize text-xs text-muted-foreground">
+                            {item.color}
+                          </span>
+                          <div
+                            className="w-3 h-3 rounded-full border border-border/40 shadow-sm"
+                            style={{ backgroundColor: item.color }}
+                            title={item.color}
+                          />
+                        </div>
+                      </>
                     )}
                   </div>
                 ))}
@@ -291,15 +293,27 @@ function OutfitDetailContent({
 
         {/* Footer (Sticky) */}
         <div className="p-4 md:p-6 border-t bg-background shrink-0 flex justify-between items-center z-10">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(outfit._id)}
-            className="gap-2 hover:bg-destructive/90"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Delete Outfit</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(outfit._id)}
+              className="gap-2 hover:bg-destructive/90"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Delete</span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onEdit(outfit)}
+              className="gap-2"
+            >
+              <Pencil className="w-4 h-4" />
+              <span className="hidden sm:inline">Edit</span>
+            </Button>
+          </div>
+
           <Button variant="outline" size="sm" onClick={onClose}>
             Close
           </Button>
@@ -352,17 +366,13 @@ function OutfitCard({
   items,
   styleName,
   onView,
-  onDelete,
-  onEdit,
 }: {
   outfit: Outfit;
   items: ClothingItem[];
   styleName: string;
   onView: (outfit: Outfit) => void;
-  onDelete: (id: string) => void;
-  onEdit: (outfit: Outfit) => void;
 }) {
-  const { status, url, trigger } = useVisualization(
+  const { status, url } = useVisualization(
     outfit._id,
     outfit.visualization_status ||
       (outfit.visualization_key ? "completed" : "none")
@@ -374,16 +384,16 @@ function OutfitCard({
 
   return (
     <Card
-      className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer flex flex-col h-full"
+      className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer flex flex-col h-full bg-card"
       onClick={() => onView(outfit)}
     >
       {/* Image / Preview Area - Square aspect ratio for better fit display */}
-      <div className="aspect-square w-full overflow-hidden border-b border-border/40 relative bg-muted/5">
+      <div className="aspect-square w-full overflow-hidden border-none relative bg-card">
         {hasVisual ? (
           <img
             src={visualizationUrl}
             alt={outfit.name}
-            className="h-full w-full object-contain bg-muted/10 transition-transform duration-500"
+            className="h-full w-full object-contain transition-transform duration-500"
             loading="lazy"
           />
         ) : isPending ? (
@@ -396,75 +406,6 @@ function OutfitCard({
         ) : (
           <MiniOutfitPreview items={items} />
         )}
-
-        {/* Floating Actions - Always visible on mobile, hover on desktop */}
-        <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
-          {/* Quick Generate Button (Mobile only when no visual) */}
-          {status === "none" && (
-            <Button
-              variant="secondary"
-              size="icon"
-              className="h-8 w-8 shadow-sm bg-background/90 backdrop-blur-sm hover:bg-background sm:hidden"
-              onClick={(e) => {
-                e.stopPropagation();
-                trigger();
-              }}
-            >
-              <ImagePlus className="h-4 w-4" />
-            </Button>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-8 w-8 shadow-sm bg-background/90 backdrop-blur-sm hover:bg-background"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {status === "none" && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    trigger();
-                  }}
-                >
-                  <ImagePlus className="mr-2 h-4 w-4" /> Generate Visual
-                </DropdownMenuItem>
-              )}
-              {status === "failed" && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    trigger();
-                  }}
-                >
-                  <ImagePlus className="mr-2 h-4 w-4" /> Retry Generation
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(outfit);
-                }}
-              >
-                <Pencil className="mr-2 h-4 w-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(outfit._id);
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       </div>
 
       <CardContent className="p-4 flex-1 flex flex-col gap-2">
@@ -573,6 +514,11 @@ export default function OutfitsListPage() {
       qc.invalidateQueries({ queryKey: ["outfits"] });
       setEditorOpen(false);
       setEditingOutfit(null);
+
+      // Update the view modal if it's currently showing this outfit
+      if (viewOutfit) {
+        setOpen(false); // Close view to refresh state easily or refetch
+      }
     },
     onError: () => toast.error("Failed to update outfit"),
   });
@@ -669,41 +615,9 @@ export default function OutfitsListPage() {
           {/* Title & Stats */}
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight">Your Rotation</h1>
-            {/* Mobile Grid Toggle */}
-
-            <div className="flex items-center gap-2 sm:hidden">
-              <span className="text-xs text-muted-foreground">
-                {filteredOutfits.length} items
-              </span>
-              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-                <button
-                  onClick={() => setGridCols(1)}
-                  className={`p-1.5 rounded-md transition-all ${
-                    gridCols === 1
-                      ? "bg-background shadow-sm"
-                      : "hover:bg-background/50 text-muted-foreground"
-                  }`}
-                >
-                  <div className="w-3.5 h-3.5 border-2 border-current rounded-[2px]" />
-                </button>
-                <button
-                  onClick={() => setGridCols(2)}
-                  className={`p-1.5 rounded-md transition-all ${
-                    gridCols === 2
-                      ? "bg-background shadow-sm"
-                      : "hover:bg-background/50 text-muted-foreground"
-                  }`}
-                >
-                  <div className="flex gap-0.5 w-3.5 h-3.5">
-                    <div className="w-full h-full border-2 border-current rounded-[1px]" />
-                    <div className="w-full h-full border-2 border-current rounded-[1px]" />
-                  </div>
-                </button>
-              </div>
-            </div>
             <Button onClick={handleCreate} size="sm" className="gap-2">
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Outfit</span>
+              <span className="sm:inline">New Outfit</span>
             </Button>
           </div>
 
@@ -745,6 +659,37 @@ export default function OutfitsListPage() {
                 placeholder="Search outfits..."
                 className="w-full py-2 pl-10 pr-4 text-sm border rounded-lg border-border bg-muted/70 focus:outline-none focus:ring-2 focus:ring-primary"
               />
+            </div>
+            {/* Mobile Grid Toggle */}
+            <div className="flex items-center gap-2 sm:hidden justify-between">
+              <span className="text-xs text-muted-foreground">
+                {filteredOutfits.length} items
+              </span>
+              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+                <button
+                  onClick={() => setGridCols(1)}
+                  className={`p-1.5 rounded-md transition-all ${
+                    gridCols === 1
+                      ? "bg-background shadow-sm"
+                      : "hover:bg-background/50 text-muted-foreground"
+                  }`}
+                >
+                  <div className="w-3.5 h-3.5 border-2 border-current rounded-[2px]" />
+                </button>
+                <button
+                  onClick={() => setGridCols(2)}
+                  className={`p-1.5 rounded-md transition-all ${
+                    gridCols === 2
+                      ? "bg-background shadow-sm"
+                      : "hover:bg-background/50 text-muted-foreground"
+                  }`}
+                >
+                  <div className="flex gap-0.5 w-3.5 h-3.5">
+                    <div className="w-full h-full border-2 border-current rounded-[1px]" />
+                    <div className="w-full h-full border-2 border-current rounded-[1px]" />
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -790,8 +735,6 @@ export default function OutfitsListPage() {
                 items={getOutfitItems(outfit.items)}
                 styleName={getStyleName(outfit.style_id)}
                 onView={handleOpenView}
-                onDelete={(id) => delMut.mutate(id)}
-                onEdit={handleEdit}
               />
             ))}
           </div>
@@ -807,6 +750,7 @@ export default function OutfitsListPage() {
               getOutfitItems={getOutfitItems}
               getStyleName={getStyleName}
               onDelete={(id) => delMut.mutate(id)}
+              onEdit={handleEdit}
               onClose={() => setOpen(false)}
             />
           )}

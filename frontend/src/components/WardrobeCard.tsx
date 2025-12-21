@@ -31,7 +31,6 @@ export const WardrobeCard = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const colorHex = item.color_code || getColorHex(item.color);
-  console.log("Color Hex for", item.color, "is", colorHex);
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
