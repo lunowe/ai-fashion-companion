@@ -378,7 +378,8 @@ async def visualize_outfit(
     id: str,
     background_tasks: BackgroundTasks,
     current_user: UserResponse = Depends(get_current_user),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    regenerate: bool = False,
 ):
     user_id = current_user.id
     
@@ -386,14 +387,31 @@ async def visualize_outfit(
     if not outfit:
         raise HTTPException(status_code=404, detail="Outfit not found")
     
-    # Already completed
-    if outfit.get("visualization_status") == "completed" and outfit.get("visualization_key"):
-        url = s3_service.generate_presigned_url(outfit["visualization_key"])
-        return {"status": "completed", "visualization_url": url}
-    
-    # Already pending
-    if outfit.get("visualization_status") == "pending":
-        return {"status": "pending"}
+    # Handle regeneration: delete old visual and reset status
+    if regenerate and outfit.get("visualization_key"):
+        old_key = outfit.get("visualization_key")
+        if old_key and not old_key.startswith("http"):
+            try:
+                s3_service.delete_object(old_key)
+                print(f"Deleted old visualization for outfit {id}: {old_key}")
+            except Exception as e:
+                print(f"Failed to delete old S3 visualization {old_key}: {e}")
+        
+        # Reset status to allow regeneration
+        await db.outfits.update_one(
+            {"_id": ObjectId(id)},
+            {"$set": {"visualization_status": "none", "visualization_key": None}}
+        )
+    elif not regenerate:
+        # Not regenerating - check existing status
+        # Already completed
+        if outfit.get("visualization_status") == "completed" and outfit.get("visualization_key"):
+            url = s3_service.generate_presigned_url(outfit["visualization_key"])
+            return {"status": "completed", "visualization_url": url}
+        
+        # Already pending
+        if outfit.get("visualization_status") == "pending":
+            return {"status": "pending"}
     
     # Fetch items
     items = []

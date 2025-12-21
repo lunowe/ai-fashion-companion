@@ -11,6 +11,7 @@ import {
   ImageIcon,
   Loader2,
   Lock,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,7 +51,6 @@ const StyleVisualPreview = ({ style }: { style: Style }) => {
   const isSystem = !style.user_id;
 
   if (hasImages) {
-    // Show a mini collage of up to 3 images
     const displayImages = images.slice(0, 3);
     return (
       <div className="w-full h-full bg-muted/10 grid grid-cols-2 gap-0.5 relative overflow-hidden">
@@ -75,13 +75,11 @@ const StyleVisualPreview = ({ style }: { style: Style }) => {
             />
           </div>
         ))}
-        {/* Overlay gradient for readability of text on card if needed, or just aesthetic */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   }
 
-  // Fallback: Aesthetic Gradient
   return (
     <div
       className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${
@@ -116,11 +114,8 @@ const StyleCard = ({
       onClick={() => onClick(style)}
       className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer flex flex-col h-full border-muted hover:border-primary/20"
     >
-      {/* Visual Header */}
       <div className="aspect-[2/1] w-full overflow-hidden relative border-b border-border/40">
         <StyleVisualPreview style={style} />
-
-        {/* Type Badge (Absolute) */}
         <div className="absolute top-2 right-2">
           {!isCustom && (
             <Badge
@@ -132,7 +127,6 @@ const StyleCard = ({
           )}
         </div>
       </div>
-
       <CardContent className="p-4 flex flex-col flex-1 gap-1">
         <h3 className="font-semibold text-lg leading-tight truncate group-hover:text-primary transition-colors">
           {style.name}
@@ -157,20 +151,16 @@ export default function StylesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Style | null>(null);
-
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "custom" | "system">(
     "all"
   );
 
-  // 1. Fetch
   const { data: styles, isLoading } = useQuery({
     queryKey: ["styles"],
     queryFn: () => listStyles(false),
   });
 
-  // 2. Form Setup
   const { register, handleSubmit, reset, setValue, watch } = useForm<StyleForm>(
     {
       defaultValues: {
@@ -183,7 +173,7 @@ export default function StylesPage() {
     }
   );
 
-  // 3. Mutations
+  // Mutations
   const createMut = useMutation({
     mutationFn: (p: StyleForm) => createStyle(p),
     onSuccess: () => {
@@ -213,13 +203,12 @@ export default function StylesPage() {
     onSuccess: () => {
       toast.success("Style deleted");
       qc.invalidateQueries({ queryKey: ["styles"] });
-      setOpen(false); // Close dialog if deleting from within dialog
+      setOpen(false);
     },
     onError: (e) =>
       toast.error(`Error: ${e instanceof Error ? e.message : "Unknown error"}`),
   });
 
-  // 4. Handlers
   function onOpenNew() {
     reset({
       name: "",
@@ -267,16 +256,11 @@ export default function StylesPage() {
     setValue("reference_images", newUrls, { shouldValidate: true });
   };
 
-  // 5. Filter Logic
   const filteredStyles = useMemo(() => {
     if (!styles) return [];
     let result = styles;
-
-    // Type Filter
     if (filterType === "custom") result = result.filter((s) => !!s.user_id);
     if (filterType === "system") result = result.filter((s) => !s.user_id);
-
-    // Search Filter
     if (searchQuery.trim()) {
       const lowerQ = searchQuery.toLowerCase();
       result = result.filter(
@@ -285,24 +269,16 @@ export default function StylesPage() {
           (s.description && s.description.toLowerCase().includes(lowerQ))
       );
     }
-
     return result;
   }, [styles, filterType, searchQuery]);
 
   const watchedImages = (watch("reference_images") as string[]) || [];
-  const isEditingSystem = editing && !editing.user_id; // Check if current dialog is for a system style
+  const isEditingSystem = editing && !editing.user_id;
 
-  // Render Logic
   if (isLoading) {
     return (
       <div className="space-y-6 px-2">
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-10 w-full md:w-1/3" />
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-20 rounded-full" />
-            <Skeleton className="h-8 w-20 rounded-full" />
-          </div>
-        </div>
+        <Skeleton className="h-10 w-full md:w-1/3" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-48 w-full rounded-xl" />
@@ -313,7 +289,7 @@ export default function StylesPage() {
   }
 
   return (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-6 pt-4 h-full px-2">
       {/* --- Header & Controls --- */}
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
@@ -323,13 +299,12 @@ export default function StylesPage() {
               Aesthetics and presets for your outfits.
             </p>
           </div>
-          <Button onClick={onOpenNew} className="gap-2">
+          <Button onClick={onOpenNew} className="gap-2 shadow-sm">
             <Plus className="w-4 h-4" /> New Style
           </Button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-          {/* Filter Pills */}
           <div className="flex flex-wrap gap-2">
             {[
               { id: "all", label: "All Styles" },
@@ -339,18 +314,16 @@ export default function StylesPage() {
               <button
                 key={tab.id}
                 onClick={() => setFilterType(tab.id as any)}
-                className={`cursor-pointer flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all ${
+                className={`cursor-pointer flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-all border ${
                   filterType === tab.id
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-muted/70 text-secondary-foreground hover:bg-muted"
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-background text-muted-foreground border-transparent hover:bg-muted"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
-
-          {/* Search */}
           <div className="relative w-full sm:w-64">
             <Search className="absolute w-4 h-4 transform -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
             <input
@@ -358,7 +331,7 @@ export default function StylesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Find a style..."
-              className="w-full py-2 pl-10 pr-4 text-sm border rounded-lg border-border bg-muted/70 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full py-2 pl-10 pr-4 text-sm border rounded-full border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
         </div>
@@ -366,9 +339,9 @@ export default function StylesPage() {
 
       {/* --- Grid Content --- */}
       {filteredStyles.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-muted rounded-xl bg-muted/5">
+        <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-muted rounded-xl bg-muted/5">
           <div className="p-4 bg-muted/50 rounded-full mb-3">
-            <Palette className="w-8 h-8 text-muted-foreground" />
+            <Palette className="w-8 h-8 text-muted-foreground/50" />
           </div>
           <h3 className="text-lg font-semibold">No styles found</h3>
           <p className="text-muted-foreground text-sm max-w-xs mx-auto mt-1">
@@ -385,42 +358,20 @@ export default function StylesPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
           {filteredStyles.map((style) => (
             <StyleCard key={style._id} style={style} onClick={onOpenEdit} />
           ))}
         </div>
       )}
 
-      {/* --- Dialog Form --- */}
+      {/* --- Refined Dialog Form --- */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl! max-h-[85vh] h-[85vh] p-6">
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <DialogTitle>
-                {editing
-                  ? isEditingSystem
-                    ? "Style Details"
-                    : "Edit Style"
-                  : "Create New Style"}
-              </DialogTitle>
-              {isEditingSystem && (
-                <Badge variant="secondary">
-                  <Lock className="w-3 h-3 mr-1" /> Read Only
-                </Badge>
-              )}
-            </div>
-            <DialogDescription>
-              {isEditingSystem
-                ? "This is a system preset and cannot be modified."
-                : "Define the aesthetic and AI instructions for this style."}
-            </DialogDescription>
-          </DialogHeader>
-
+        {/* Changed padding to p-0 to allow header/footer to be full width */}
+        <DialogContent className="max-w-2xl max-h-[85vh] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
           <form
             onSubmit={handleSubmit((values) => {
-              if (isEditingSystem) return; // Guard against submission
-
+              if (isEditingSystem) return;
               const payload: StyleForm = {
                 name: (values.name ?? "").trim(),
                 description: (values.description ?? "").trim(),
@@ -431,142 +382,211 @@ export default function StylesPage() {
               if (editing) updateMut.mutate(payload);
               else createMut.mutate(payload);
             })}
-            className="space-y-6"
+            className="flex flex-col h-full"
           >
-            {/* Form Inputs disabled if System Style */}
-            <fieldset
-              disabled={!!isEditingSystem}
-              className="space-y-6 group-disabled:opacity-90"
-            >
-              <Tabs defaultValue="basics" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="basics">Basic Info</TabsTrigger>
-                  <TabsTrigger value="advanced">AI Configuration</TabsTrigger>
-                </TabsList>
-
-                {/* TAB: BASICS */}
-                <TabsContent value="basics" className="space-y-4 pt-4 mt-auto">
-                  <div className="space-y-2">
-                    <Label>Style Name</Label>
-                    <Input
-                      {...register("name", { required: true })}
-                      placeholder="e.g. Minimalist Streetwear"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      {...register("description", { required: true })}
-                      placeholder="Briefly describe this style..."
-                      className="resize-none"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Reference Images</Label>
-                    <div className="grid grid-cols-4 gap-3">
-                      {watchedImages.map((src, i) => (
-                        <div
-                          key={i}
-                          className="relative aspect-square group rounded-md overflow-hidden border"
-                        >
-                          <img
-                            src={
-                              src.startsWith("data:") || src.startsWith("http")
-                                ? src
-                                : `${api.getUri()}${src}`
-                            }
-                            alt={`ref-${i}`}
-                            className="object-cover w-full h-full"
-                          />
-                          {!isEditingSystem && (
-                            <button
-                              type="button"
-                              onClick={() => removeImage(i)}
-                              className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Trash2 className="w-5 h-5 text-white" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-
-                      {!isEditingSystem && (
-                        <label className="aspect-square border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/5 rounded-md flex flex-col items-center justify-center cursor-pointer transition-colors">
-                          <ImageIcon className="w-6 h-6 text-muted-foreground mb-1" />
-                          <span className="text-[10px] text-muted-foreground font-medium">
-                            Add Image
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={handleImageUpload}
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* TAB: ADVANCED */}
-                <TabsContent value="advanced" className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Sparkles className="w-3 h-3 text-purple-500" />
-                      System Prompt Override
-                    </Label>
-                    <Textarea
-                      {...register("style_prompt")}
-                      placeholder="Instructions for the AI stylist..."
-                      className="font-mono text-sm h-40"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      This prompt is sent to the AI to enforce specific rules
-                      for this style.
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </fieldset>
-
-            <DialogFooter className="flex justify-between sm:justify-between items-center w-full">
-              {/* Delete Button (Left side, only for editing Custom) */}
-              {editing && !isEditingSystem ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => delMut.mutate(editing._id)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete
-                </Button>
-              ) : (
-                <div></div>
-              )}
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setOpen(false)}
-                >
-                  Close
-                </Button>
-                {!isEditingSystem && (
-                  <Button
-                    type="submit"
-                    disabled={createMut.isPending || updateMut.isPending}
-                  >
-                    {(createMut.isPending || updateMut.isPending) && (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    )}
-                    {editing ? "Save Changes" : "Create Style"}
-                  </Button>
+            {/* 1. Header (Fixed) */}
+            <DialogHeader className="px-6 py-5 border-b bg-background z-10">
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-xl">
+                  {editing
+                    ? isEditingSystem
+                      ? "System Style Details"
+                      : "Edit Style"
+                    : "Create New Style"}
+                </DialogTitle>
+                {isEditingSystem && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Lock className="w-3 h-3" /> Read Only
+                  </Badge>
                 )}
+              </div>
+              <DialogDescription className="mt-1.5">
+                {isEditingSystem
+                  ? "This preset is provided by the system and cannot be modified."
+                  : "Configure the visual aesthetics and AI instructions."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* 2. Scrollable Body (Flex-1) */}
+            <div className="flex-1 overflow-y-auto">
+              <fieldset
+                disabled={!!isEditingSystem}
+                className="group-disabled:opacity-100 h-full flex flex-col"
+              >
+                <Tabs
+                  defaultValue="basics"
+                  className="w-full h-full flex flex-col"
+                >
+                  <div className="px-6 py-2 border-b bg-muted/5 sticky top-0 z-10 backdrop-blur-sm">
+                    <TabsList className="grid w-full grid-cols-2 h-9">
+                      <TabsTrigger value="basics">
+                        Basic Info & Images
+                      </TabsTrigger>
+                      <TabsTrigger value="advanced">
+                        AI Configuration
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <div className="p-6">
+                    {/* TAB: BASICS */}
+                    <TabsContent
+                      value="basics"
+                      className="mt-0 space-y-6 outline-none"
+                    >
+                      <div className="grid gap-6">
+                        <div className="space-y-2">
+                          <Label>Style Name</Label>
+                          <Input
+                            {...register("name", { required: true })}
+                            placeholder="e.g. Minimalist Streetwear"
+                            className="bg-transparent"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Textarea
+                            {...register("description", { required: true })}
+                            placeholder="Briefly describe this style..."
+                            className="resize-none bg-transparent min-h-[80px]"
+                            rows={3}
+                          />
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Reference Images</Label>
+                            <span className="text-xs text-muted-foreground">
+                              {watchedImages.length} images
+                            </span>
+                          </div>
+
+                          <div className="bg-muted/10 border rounded-xl p-4">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                              {watchedImages.map((src, i) => (
+                                <div
+                                  key={i}
+                                  className="relative aspect-square group rounded-lg overflow-hidden border bg-background shadow-sm"
+                                >
+                                  <img
+                                    src={
+                                      src.startsWith("data:") ||
+                                      src.startsWith("http")
+                                        ? src
+                                        : `${api.getUri()}${src}`
+                                    }
+                                    alt={`ref-${i}`}
+                                    className="object-cover w-full h-full"
+                                  />
+                                  {!isEditingSystem && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeImage(i)}
+                                      className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                    >
+                                      <Trash2 className="w-5 h-5 text-white" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+
+                              {!isEditingSystem && (
+                                <label className="aspect-square border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all duration-200 gap-2 group">
+                                  <div className="p-2 rounded-full bg-muted group-hover:bg-background transition-colors">
+                                    <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                                  </div>
+                                  <span className="text-[10px] font-medium text-muted-foreground">
+                                    Upload
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    onChange={handleImageUpload}
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    {/* TAB: ADVANCED */}
+                    <TabsContent
+                      value="advanced"
+                      className="mt-0 space-y-6 outline-none"
+                    >
+                      <div className="rounded-lg border bg-blue-50/50 dark:bg-blue-950/10 p-4">
+                        <div className="flex gap-3">
+                          <Sparkles className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                          <div className="space-y-1">
+                            <h4 className="font-medium text-sm text-blue-900 dark:text-blue-100">
+                              System Prompt Override
+                            </h4>
+                            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                              This hidden prompt is sent to the AI to enforce
+                              specific styling rules. Use this to define color
+                              palettes, fit preferences, or specific fashion
+                              eras.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Prompt Instructions</Label>
+                        <Textarea
+                          {...register("style_prompt")}
+                          placeholder="e.g. Prioritize neutral tones, oversized fits, and matte textures..."
+                          className="font-mono text-sm min-h-[250px] bg-muted/5 leading-relaxed"
+                        />
+                      </div>
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </fieldset>
+            </div>
+
+            {/* 3. Footer (Fixed) */}
+            <DialogFooter className="px-6 py-4 border-t bg-muted/10 mt-auto">
+              <div className="flex w-full items-center justify-between">
+                {editing && !isEditingSystem ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => delMut.mutate(editing._id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete Style
+                  </Button>
+                ) : (
+                  <div /> // Spacer
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  {!isEditingSystem && (
+                    <Button
+                      type="submit"
+                      disabled={createMut.isPending || updateMut.isPending}
+                    >
+                      {(createMut.isPending || updateMut.isPending) && (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      )}
+                      {editing ? "Save Changes" : "Create Style"}
+                    </Button>
+                  )}
+                </div>
               </div>
             </DialogFooter>
           </form>

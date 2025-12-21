@@ -10,6 +10,7 @@ import {
   Calendar,
   MessageSquare,
   Clock,
+  ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type {
@@ -42,6 +43,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import GenerationHistory from "@/components/GenerationHistory";
 import { useColors, useCategories } from "@/hooks/useCatalogData";
 import { ClothingIcon } from "@/lib/icons";
@@ -53,7 +59,6 @@ const OCCASION_PRESETS = [
   { id: "date", label: "Date Night", icon: "❤️" },
   { id: "going-out", label: "Going Out", icon: "🎉" },
   { id: "gym", label: "Gym", icon: "🏋️" },
-  { id: "home", label: "Home", icon: "🏠" },
 ];
 
 const WEATHER_PRESETS = [
@@ -276,7 +281,7 @@ export default function OutfitGeneratorV2({
 
             <div className="space-y-8">
               {/* 1. Free Text & Style (The Core) */}
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2 rounded-xl bg-background p-5 border-none">
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2 font-semibold text-base">
                     <MessageSquare className="w-4 h-4" />
@@ -286,7 +291,7 @@ export default function OutfitGeneratorV2({
                     value={freeText}
                     onChange={(e) => setFreeText(e.target.value)}
                     placeholder="Describe the vibe... (eg. 'I need a layered outfit for a chilly coffee date...')"
-                    className="min-h-[120px] resize-none bg-background text-base shadow-sm focus-visible:ring-primary"
+                    className="min-h-[120px] resize-none bg-muted text-base focus-visible:ring-primary"
                   />
                   {/* <div className="relative group">
                                         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
@@ -309,7 +314,7 @@ export default function OutfitGeneratorV2({
                     value={selectedStyle}
                     onValueChange={setSelectedStyle}
                   >
-                    <SelectTrigger className="h-[50px] bg-background shadow-sm w-full">
+                    <SelectTrigger className="h-[50px] bg-muted w-full">
                       <SelectValue placeholder="Select Aesthetic..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -325,7 +330,7 @@ export default function OutfitGeneratorV2({
                     </SelectContent>
                   </Select>
                   <div className="pt-4">
-                    <Label className="mb-2 block text-sm text-muted-foreground">
+                    <Label className="mb-2 block text-sm text-foreground">
                       How many options?
                     </Label>
                     <div className="flex items-center gap-4">
@@ -351,11 +356,11 @@ export default function OutfitGeneratorV2({
 
               {/* 2. Context (Occasion & Weather) */}
               <div className="space-y-6">
-                <div>
+                <div className="rounded-xl p-5 border-none">
                   <Label className="flex items-center gap-2 font-semibold text-base mb-4">
                     <Calendar className="w-4 h-4" /> Occasion
                   </Label>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                     {OCCASION_PRESETS.map((p) => (
                       <button
                         key={p.id}
@@ -366,7 +371,7 @@ export default function OutfitGeneratorV2({
                         className={`group relative flex flex-col items-center p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
                           selectedOccasion === p.id && !customOccasion
                             ? "border-primary bg-primary/10 ring-1 ring-primary"
-                            : "border-border bg-background hover:border-primary/50"
+                            : "border-border bg-muted hover:border-primary/50 shadow-sm"
                         }`}
                       >
                         <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
@@ -377,7 +382,7 @@ export default function OutfitGeneratorV2({
                     ))}
                   </div>
                   <Input
-                    className="mt-3 bg-background"
+                    className="mt-3 bg-muted"
                     placeholder="Or type specific occasion..."
                     value={customOccasion}
                     onChange={(e) => {
@@ -387,7 +392,7 @@ export default function OutfitGeneratorV2({
                   />
                 </div>
 
-                <div>
+                <div className="rounded-xl p-5 border-none">
                   <Label className="flex items-center gap-2 font-semibold text-base mb-4">
                     <Thermometer className="w-4 h-4" /> Weather
                   </Label>
@@ -401,8 +406,8 @@ export default function OutfitGeneratorV2({
                         }}
                         className={`group flex flex-col items-center p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${
                           selectedWeather === p.id && !customWeather
-                            ? "border-blue-500 bg-blue-50/50 ring-1 ring-blue-500"
-                            : "border-border bg-background hover:border-blue-400/50"
+                            ? "border-sky-500 bg-sky-100/80 dark:bg-sky-900/40 ring-1 ring-sky-500"
+                            : "border-border bg-muted hover:border-sky-400/50 shadow-sm"
                         }`}
                       >
                         <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
@@ -416,7 +421,7 @@ export default function OutfitGeneratorV2({
                     ))}
                   </div>
                   <Input
-                    className="mt-3 bg-background"
+                    className="mt-3 bg-muted"
                     placeholder="Or type specific weather..."
                     value={customWeather}
                     onChange={(e) => {
@@ -430,29 +435,35 @@ export default function OutfitGeneratorV2({
               <Separator />
 
               {/* 3. Specific Items (Wardrobe) */}
-              <div className="space-y-4">
+              <Collapsible defaultOpen={false} className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <Label className="flex items-center gap-2 font-semibold text-base">
-                    <Shirt className="w-4 h-4" />
-                    Must Include Items
-                    {selectedItems.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {selectedItems.length}
-                      </Badge>
-                    )}
-                  </Label>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 font-semibold text-base p-0 h-auto hover:bg-transparent justify-start"
+                    >
+                      <Shirt className="w-4 h-4" />
+                      Must Include Items
+                      {selectedItems.length > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {selectedItems.length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="w-4 h-4 ml-1 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                    </Button>
+                  </CollapsibleTrigger>
                   <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Search wardrobe..."
                       value={itemSearch}
                       onChange={(e) => setItemSearch(e.target.value)}
-                      className="pl-9 bg-background"
+                      className="pl-9 bg-muted"
                     />
                   </div>
                 </div>
 
-                {/* Selected Chips */}
+                {/* Selected Chips - Always visible */}
                 {selectedItems.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {selectedItems.map((item) => (
@@ -474,57 +485,61 @@ export default function OutfitGeneratorV2({
                   </div>
                 )}
 
-                <ScrollArea className="h-[280px] border rounded-xl bg-muted/30 p-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {filteredWardrobe.length === 0 ? (
-                      <div className="col-span-full py-12 text-center text-muted-foreground">
-                        No items found matching "{itemSearch}"
-                      </div>
-                    ) : (
-                      filteredWardrobe.map((item) => {
-                        const isSelected = !!selectedItems.find(
-                          (i) => i._id === item._id
-                        );
-                        return (
-                          <button
-                            key={item._id}
-                            onClick={() => toggleItem(item)}
-                            className={`group relative flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 bg-background ${
-                              isSelected
-                                ? "border-primary shadow-sm"
-                                : "border-transparent hover:border-muted-foreground/20 shadow-sm"
-                            }`}
-                          >
-                            {isSelected && (
-                              <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
-                                <Check className="w-3 h-3" />
+                <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                  <ScrollArea className="h-[410px] border-none rounded-xl p-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                      {filteredWardrobe.length === 0 ? (
+                        <div className="col-span-full py-12 text-center text-muted-foreground">
+                          No items found matching "{itemSearch}"
+                        </div>
+                      ) : (
+                        filteredWardrobe.map((item) => {
+                          const isSelected = !!selectedItems.find(
+                            (i) => i._id === item._id
+                          );
+                          return (
+                            <button
+                              key={item._id}
+                              onClick={() => toggleItem(item)}
+                              className={`group relative flex flex-col items-center p-4 rounded-xl border-2 transition-all duration-200 bg-muted ${
+                                isSelected
+                                  ? "border-primary shadow-sm"
+                                  : "border-transparent hover:border-muted-foreground/20 shadow-sm"
+                              }`}
+                            >
+                              {isSelected && (
+                                <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                              )}
+                              {/* <span className="text-4xl mb-2 group-hover:scale-110 transition-transform duration-300">
+                                {getCategoryIcon(item.category)}
+                              </span> */}
+                              <ClothingIcon
+                                iconId={item.icon_id}
+                                color={
+                                  item.color_code || getColorHex(item.color)
+                                }
+                                size="sm"
+                                strokeWidth={2}
+                                className="text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors"
+                              />
+                              <div className="text-center w-full mt-auto">
+                                <p className="text-xs font-semibold truncate w-full capitalize">
+                                  {item.type}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground capitalize">
+                                  {item.color} • {item.fit}
+                                </p>
                               </div>
-                            )}
-                            {/* <span className="text-4xl mb-2 group-hover:scale-110 transition-transform duration-300">
-                              {getCategoryIcon(item.category)}
-                            </span> */}
-                            <ClothingIcon
-                              iconId={item.icon_id}
-                              color={item.color_code || getColorHex(item.color)}
-                              size="sm"
-                              strokeWidth={2}
-                              className="text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors"
-                            />
-                            <div className="text-center w-full mt-auto">
-                              <p className="text-xs font-semibold truncate w-full capitalize">
-                                {item.type}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground capitalize">
-                                {item.color} • {item.fit}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
 
             <div className="w-full p-6">

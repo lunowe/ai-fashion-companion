@@ -22,6 +22,14 @@ export async function saveOutfit(payload: OutfitCreate): Promise<Outfit> {
   return data;
 }
 
+export async function updateOutfit(
+  id: string,
+  patch: Partial<OutfitCreate>
+): Promise<Outfit> {
+  const { data } = await api.put(`/api/outfits/${id}`, patch);
+  return data;
+}
+
 export async function listOutfits(): Promise<Outfit[]> {
   const { data } = await api.get("/api/outfits/");
   return data;
@@ -37,9 +45,12 @@ export const getGenerationHistory = async (): Promise<HistoryEntry[]> => {
 };
 
 export async function triggerVisualization(
-  id: string
+  id: string,
+  regenerate: boolean = false
 ): Promise<{ status: string; visualization_url?: string }> {
-  const { data } = await api.post(`/api/outfits/${id}/visualize`);
+  const { data } = await api.post(`/api/outfits/${id}/visualize`, null, {
+    params: { regenerate },
+  });
   return data;
 }
 
