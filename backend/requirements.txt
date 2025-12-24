@@ -10,7 +10,7 @@ bcrypt
 python-jose[cryptography]
 python-multipart
 boto3
-llama-index
+llama-index 
 llama-index-llms-openrouter
 rembg[cpu]
 pillow
