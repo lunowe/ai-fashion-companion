@@ -3,13 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Google Fonts - loaded via layout.tsx */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  --font-serif: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -31,63 +31,69 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Custom FitFlow colors */
-  --color-fitflow: var(--fitflow);
-  --color-fitflow-foreground: var(--fitflow-foreground);
-  --color-fitflow-muted: var(--fitflow-muted);
+  /* Editorial FitFlow colors */
+  --color-terracotta: var(--terracotta);
+  --color-sage: var(--sage);
+  --color-cream: var(--cream);
+  --color-charcoal: var(--charcoal);
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.12 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0 0);
-  --primary: oklch(0.12 0 0);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.12 0 0);
-  --muted: oklch(0.96 0.005 280);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.96 0.02 280);
-  --accent-foreground: oklch(0.12 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --border: oklch(0.9 0.01 280);
-  --input: oklch(0.92 0 0);
-  --ring: oklch(0.55 0.2 280);
+  --radius: 0.5rem;
 
-  /* FitFlow Purple */
-  --fitflow: oklch(0.55 0.22 280);
-  --fitflow-foreground: oklch(1 0 0);
-  --fitflow-muted: oklch(0.94 0.04 280);
+  /* Editorial Light Theme - Warm, Magazine-like */
+  --background: #FDFBF7;
+  --foreground: #0F0F0F;
+  --card: #FFFFFF;
+  --card-foreground: #0F0F0F;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F0F0F;
+  --primary: #0F0F0F;
+  --primary-foreground: #FDFBF7;
+  --secondary: #F5F3EF;
+  --secondary-foreground: #0F0F0F;
+  --muted: #F5F3EF;
+  --muted-foreground: #6B6B6B;
+  --accent: #C75B4A;
+  --accent-foreground: #FFFFFF;
+  --destructive: #DC2626;
+  --border: #E8E6E1;
+  --input: #F5F3EF;
+  --ring: #C75B4A;
+
+  /* Brand Colors */
+  --terracotta: #C75B4A;
+  --sage: #6B7B5E;
+  --cream: #FDFBF7;
+  --charcoal: #0F0F0F;
 }
 
 .dark {
-  --background: oklch(0.08 0.01 280);
-  --foreground: oklch(0.95 0.01 280);
-  --card: oklch(0.12 0.015 280);
-  --card-foreground: oklch(0.95 0.01 280);
-  --popover: oklch(0.12 0.015 280);
-  --popover-foreground: oklch(0.95 0.01 280);
-  --primary: oklch(0.95 0.01 280);
-  --primary-foreground: oklch(0.08 0.01 280);
-  --secondary: oklch(0.18 0.02 280);
-  --secondary-foreground: oklch(0.95 0.01 280);
-  --muted: oklch(0.18 0.02 280);
-  --muted-foreground: oklch(0.65 0.02 280);
-  --accent: oklch(0.22 0.04 280);
-  --accent-foreground: oklch(0.95 0.01 280);
-  --destructive: oklch(0.65 0.2 25);
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.65 0.2 280);
+  /* Editorial Dark Theme - Deep, Luxurious */
+  --background: #0A0A0A;
+  --foreground: #F5F5F0;
+  --card: #141414;
+  --card-foreground: #F5F5F0;
+  --popover: #141414;
+  --popover-foreground: #F5F5F0;
+  --primary: #F5F5F0;
+  --primary-foreground: #0A0A0A;
+  --secondary: #1A1A1A;
+  --secondary-foreground: #F5F5F0;
+  --muted: #1A1A1A;
+  --muted-foreground: #888888;
+  --accent: #E8775E;
+  --accent-foreground: #0A0A0A;
+  --destructive: #EF4444;
+  --border: #262626;
+  --input: #1A1A1A;
+  --ring: #E8775E;
 
-  /* FitFlow Purple - Dark */
-  --fitflow: oklch(0.65 0.22 280);
-  --fitflow-foreground: oklch(1 0 0);
-  --fitflow-muted: oklch(0.22 0.06 280);
+  /* Brand Colors - Dark */
+  --terracotta: #E8775E;
+  --sage: #8FA17C;
+  --cream: #F5F5F0;
+  --charcoal: #0A0A0A;
 }
 
 @layer base {
@@ -96,6 +102,21 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-feature-settings: "kern" 1, "liga" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Editorial Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+
+  p, span, div, button, input, textarea, select {
+    font-family: var(--font-sans);
   }
 }
 
@@ -106,9 +127,98 @@ html {
 
 /* Custom selection color */
 ::selection {
-  background-color: oklch(0.55 0.22 280 / 0.3);
+  background-color: rgba(199, 91, 74, 0.25);
 }
 
 .dark ::selection {
-  background-color: oklch(0.65 0.22 280 / 0.4);
+  background-color: rgba(232, 119, 94, 0.35);
 }
+
+/* Editorial underline animation */
+.editorial-link {
+  position: relative;
+  display: inline-block;
+}
+
+.editorial-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+.editorial-link:hover::after {
+  width: 100%;
+}
+
+/* Magnetic button effect base */
+.magnetic-btn {
+  transition: transform 0.2s ease-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, var(--terracotta) 0%, var(--sage) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Editorial grid lines */
+.editorial-grid {
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 100px 100px;
+}
+
+/* Noise texture overlay */
+.noise-overlay {
+  position: relative;
+}
+
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Parallax container */
+.parallax-container {
+  perspective: 1000px;
+  overflow: hidden;
+}
+
+/* Stagger animation delays */
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 200ms; }
+.stagger-4 { animation-delay: 300ms; }
+.stagger-5 { animation-delay: 400ms; }
+.stagger-6 { animation-delay: 500ms; }
