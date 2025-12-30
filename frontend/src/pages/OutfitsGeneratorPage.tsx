@@ -7,7 +7,22 @@ import {
   getGenerationHistory,
   triggerVisualization,
 } from "@/services/outfits";
-import type { OutfitCreate, GeneratedOutfit, OutfitGenRequest } from "@/types";
+import {
+  generateSuitcase,
+  saveSuitcase,
+  listSuitcases,
+  updateSuitcase,
+  deleteSuitcase,
+} from "@/services/suitcases";
+import type {
+  OutfitCreate,
+  GeneratedOutfit,
+  OutfitGenRequest,
+  SuitcaseGenRequest,
+  SuitcaseGenResponse,
+  TravelSuitcaseCreate,
+  TravelSuitcaseUpdate,
+} from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -21,12 +36,17 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { toast } from "sonner";
 import OutfitGeneratorV2 from "@/components/OutfitGeneratorV2";
+import TravelWizard from "@/components/TravelWizard";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Luggage } from "lucide-react";
+
+type GeneratorMode = "outfit" | "suitcase";
 
 export default function OutfitGeneratorPage() {
   const { user } = useAuth();
+  const [mode, setMode] = useState<GeneratorMode>("outfit");
+
   const LIMITS: Record<string, number> = {
     free: 5,
     premium: 50,
@@ -55,6 +75,17 @@ export default function OutfitGeneratorPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Check if user has pro access for suitcase feature
+  const isPro = user?.role === "premium" || user?.role === "byok";
+
+  // Only fetch saved suitcases if user is pro
+  const { data: savedSuitcases } = useQuery({
+    queryKey: ["saved-suitcases"],
+    queryFn: listSuitcases,
+    enabled: isPro,
+    refetchOnWindowFocus: false,
+  });
+
   const [saveOpen, setSaveOpen] = useState(false);
   const [toSave, setToSave] = useState<OutfitCreate | null>(null);
 
@@ -69,6 +100,57 @@ export default function OutfitGeneratorPage() {
     },
     onError: () => toast.error("Failed to generate outfits"),
   });
+
+  const suitcaseMut = useMutation({
+    mutationFn: generateSuitcase,
+    onError: () => toast.error("Failed to generate travel suitcase"),
+  });
+
+  const handleGenerateSuitcase = async (
+    formData: SuitcaseGenRequest
+  ): Promise<SuitcaseGenResponse> => {
+    return await suitcaseMut.mutateAsync(formData);
+  };
+
+  const saveSuitcaseMut = useMutation({
+    mutationFn: saveSuitcase,
+    onSuccess: () => {
+      toast.success("Suitcase saved!");
+      qc.invalidateQueries({ queryKey: ["saved-suitcases"] });
+    },
+    onError: () => toast.error("Failed to save suitcase"),
+  });
+
+  const handleSaveSuitcase = async (suitcaseData: TravelSuitcaseCreate) => {
+    return await saveSuitcaseMut.mutateAsync(suitcaseData);
+  };
+
+  const updateSuitcaseMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: TravelSuitcaseUpdate }) =>
+      updateSuitcase(id, data),
+    onSuccess: () => {
+      toast.success("Suitcase updated!");
+      qc.invalidateQueries({ queryKey: ["saved-suitcases"] });
+    },
+    onError: () => toast.error("Failed to update suitcase"),
+  });
+
+  const handleUpdateSuitcase = async (id: string, data: TravelSuitcaseUpdate) => {
+    await updateSuitcaseMut.mutateAsync({ id, data });
+  };
+
+  const deleteSuitcaseMut = useMutation({
+    mutationFn: deleteSuitcase,
+    onSuccess: () => {
+      toast.success("Suitcase deleted");
+      qc.invalidateQueries({ queryKey: ["saved-suitcases"] });
+    },
+    onError: () => toast.error("Failed to delete suitcase"),
+  });
+
+  const handleDeleteSuitcase = async (id: string) => {
+    await deleteSuitcaseMut.mutateAsync(id);
+  };
 
   const saveMut = useMutation({
     mutationFn: async (
@@ -114,9 +196,39 @@ export default function OutfitGeneratorPage() {
 
   return (
     <>
+      {/* Mode Toggle */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="flex items-center gap-2 p-1 bg-muted rounded-lg w-fit">
+          <button
+            type="button"
+            onClick={() => setMode("outfit")}
+            className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              mode === "outfit"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            Create Outfit
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("suitcase")}
+            className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              mode === "suitcase"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Luggage className="w-4 h-4" />
+            Pack for Trip
+          </button>
+        </div>
+      </div>
+
       {isLimitReached && (
         <div
-          className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 rounded shadow-sm"
+          className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 mx-4 rounded shadow-sm"
           role="alert"
         >
           <p className="font-bold">Daily Limit Reached</p>
@@ -133,20 +245,29 @@ export default function OutfitGeneratorPage() {
         </div>
       )}
 
-      <OutfitGeneratorV2
-        styles={styles || []}
-        wardrobe={wardrobe || []}
-        onGenerate={handleGenerate}
-        onSave={handleSave}
-        disabled={isLimitReached}
-        history={history || []}
-      />
-      {/* <OutfitGeneratorV3
-                styles={styles || []}
-                wardrobe={wardrobe || []}
-                onGenerate={handleGenerate}
-                onSave={handleSave}
-            /> */}
+      {mode === "outfit" ? (
+        <OutfitGeneratorV2
+          styles={styles || []}
+          wardrobe={wardrobe || []}
+          onGenerate={handleGenerate}
+          onSave={handleSave}
+          disabled={isLimitReached}
+          history={history || []}
+        />
+      ) : (
+        <TravelWizard
+          wardrobe={wardrobe || []}
+          styles={styles || []}
+          savedSuitcases={savedSuitcases || []}
+          isPro={isPro}
+          onGenerate={handleGenerateSuitcase}
+          onSaveSuitcase={handleSaveSuitcase}
+          onUpdateSuitcase={handleUpdateSuitcase}
+          onSaveOutfit={handleSave}
+          onDeleteSuitcase={handleDeleteSuitcase}
+          disabled={isLimitReached}
+        />
+      )}
 
       {/* Save Dialog */}
       <Dialog

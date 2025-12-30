@@ -83,3 +83,61 @@ export interface CatalogItem {
   default_seasons?: string[];
   formality_level?: number;
 }
+
+// Travel Suitcase Types
+export type SuitcaseGenRequest = {
+  destination: string;
+  start_date: string; // ISO date string
+  end_date: string; // ISO date string
+  occasions: string[];
+  style_ids?: string[]; // 1-3 style IDs for variety
+};
+
+export type PackingItem = {
+  item_id: string;
+  reason?: string;
+};
+
+export type DailyOutfit = {
+  day: number;
+  date?: string;
+  occasion: string;
+  items: string[];
+  reasoning?: string;
+};
+
+export type DestinationSummary = {
+  weather?: string;
+  temperature_range?: string;
+  packing_notes?: string;
+};
+
+export type SuitcaseGenResponse = {
+  destination_summary: DestinationSummary;
+  packing_list: PackingItem[];
+  daily_outfits: DailyOutfit[];
+  versatility_insights: string;
+};
+
+// Saved Suitcase Types
+export type TravelSuitcase = {
+  _id: string;
+  user_id?: string;
+  name?: string;
+  destination: string;
+  start_date: string;
+  end_date: string;
+  occasions: string[];
+  style_ids?: string[];
+  destination_summary?: DestinationSummary;
+  packing_list: PackingItem[];
+  daily_outfits: DailyOutfit[];
+  versatility_insights?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type TravelSuitcaseCreate = Omit<TravelSuitcase, "_id" | "user_id" | "created_at" | "updated_at">;
+
+export type TravelSuitcaseUpdate = Partial<TravelSuitcaseCreate>;
