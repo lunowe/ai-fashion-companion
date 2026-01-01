@@ -70,6 +70,11 @@ export interface HistoryEntry {
   outfits: GeneratedOutfit[];
 }
 
+export type IconOverride = {
+  match: { fit?: string; material?: string };
+  icon_id: string;
+};
+
 export interface CatalogItem {
   _id: string;
   category: string;
@@ -77,6 +82,7 @@ export interface CatalogItem {
   icon?: string;
   icon_id?: string;
   icon_aspect_ratio?: string;
+  icon_overrides?: IconOverride[];
   allowed_colors: string[];
   allowed_fits: string[];
   allowed_materials: string[];

@@ -263,6 +263,7 @@ export default function WardrobeCardView({
               onEdit={onEdit}
               onDelete={onDelete}
               getColorHex={getColorHex}
+              getCategoryIconId={getCategoryIconId}
             />
           ))}
         </div>

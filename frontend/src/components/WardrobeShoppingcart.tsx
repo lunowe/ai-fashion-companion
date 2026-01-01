@@ -183,32 +183,30 @@ function ColorSelector({
         </div>
       )}
 
-      {/* Custom color input (for custom items or additions) */}
-      {availableColorSlugs.length === 0 && (
-        <div className="flex gap-2 pt-2 border-t">
-          <input
-            type="color"
-            value={customColorHex}
-            onChange={(e) => setCustomColorHex(e.target.value)}
-            className="w-9 h-9 rounded cursor-pointer border"
-          />
-          <Input
-            value={customColorName}
-            onChange={(e) => setCustomColorName(e.target.value)}
-            placeholder="Custom color name..."
-            className="flex-1"
-            onKeyDown={(e) => e.key === "Enter" && addCustomColor()}
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={addCustomColor}
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+      {/* Custom color input - always available */}
+      <div className="flex gap-2 pt-2 border-t">
+        <input
+          type="color"
+          value={customColorHex}
+          onChange={(e) => setCustomColorHex(e.target.value)}
+          className="w-9 h-9 rounded cursor-pointer border"
+        />
+        <Input
+          value={customColorName}
+          onChange={(e) => setCustomColorName(e.target.value)}
+          placeholder="Custom color name..."
+          className="flex-1"
+          onKeyDown={(e) => e.key === "Enter" && addCustomColor()}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={addCustomColor}
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
     </div>
   );
 }

@@ -20,6 +20,7 @@ interface WardrobeCardProps {
   onEdit: (item: ClothingItem) => void;
   onDelete: (id: string) => void;
   getColorHex: (color: string) => string;
+  getCategoryIconId?: (category: string) => string | undefined;
 }
 
 export const WardrobeCard = ({
@@ -27,10 +28,13 @@ export const WardrobeCard = ({
   onEdit,
   onDelete,
   getColorHex,
+  getCategoryIconId,
 }: WardrobeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const colorHex = item.color_code || getColorHex(item.color);
+  // Use item's icon_id, or fall back to category's icon_id
+  const effectiveIconId = item.icon_id || getCategoryIconId?.(item.category);
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -47,7 +51,7 @@ export const WardrobeCard = ({
             ) : (
               <div className="flex h-full w-full items-center justify-center p-4">
                 <ClothingIcon
-                  iconId={item.icon_id}
+                  iconId={effectiveIconId}
                   color={colorHex}
                   size="xl"
                   strokeWidth={2}
@@ -134,7 +138,7 @@ export const WardrobeCard = ({
             ) : (
               <div className="flex h-full w-full items-center justify-center rounded-lg">
                 <ClothingIcon
-                  iconId={item.icon_id}
+                  iconId={effectiveIconId}
                   color={item.color_code || colorHex}
                   size="2xl"
                   aspectRatio={item.icon_aspect_ratio}

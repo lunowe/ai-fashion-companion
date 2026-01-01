@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listColors,
   createColor,
+  updateColor,
   deleteColor,
   type Color,
   type ColorCreate,
+  type ColorUpdate,
 } from "@/services/colors";
 import {
   listCategories,
@@ -40,12 +42,18 @@ export function useColorMutations() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["colors"] }),
   });
 
+  const update = useMutation({
+    mutationFn: ({ slug, data }: { slug: string; data: ColorUpdate }) =>
+      updateColor(slug, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["colors"] }),
+  });
+
   const remove = useMutation({
     mutationFn: (slug: string) => deleteColor(slug),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["colors"] }),
   });
 
-  return { create, remove };
+  return { create, update, remove };
 }
 
 export function useCategoryMutations() {
@@ -77,5 +85,25 @@ export function useColorMap() {
   return (slug: string): string => {
     const color = colors?.find((c) => c.slug === slug);
     return color?.hex ?? "#CCCCCC";
+  };
+}
+
+// Utility hook for getting category icon (for fallback)
+export function useCategoryIconMap() {
+  const { data: categories } = useCategories();
+
+  return (categorySlug: string | undefined): string | undefined => {
+    if (!categorySlug) return undefined;
+    const cat = categories?.find((c) => c.slug === categorySlug.toLowerCase());
+    return cat?.icon_id;
+  };
+}
+
+// Utility hook to get effective icon for a clothing item (with category fallback)
+export function useEffectiveIconId() {
+  const getCategoryIcon = useCategoryIconMap();
+
+  return (itemIconId: string | undefined, category: string | undefined): string | undefined => {
+    return itemIconId || getCategoryIcon(category);
   };
 }

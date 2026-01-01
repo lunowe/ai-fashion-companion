@@ -11,6 +11,8 @@ import PoloShirtIcon from "@/assets/icons/Polo_front.svg?react";
 import HenlyIcon from "@/assets/icons/Henley_front.svg?react";
 import CardiganIcon from "@/assets/icons/Cardigan_2_front.svg?react";
 import TrousersIcon from "@/assets/icons/Sweats_46_front.svg?react";
+import HoodieIcon from "@/assets/icons/Hoodie-12_front.svg?react";
+import ZipHoodieIcon from "@/assets/icons/Hoodie-15_front.svg?react";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -28,6 +30,8 @@ const ICON_MAP: Record<string, IconComponent | string> = {
   "dress-shirt": DressShirtIcon,
   cardigan: CardiganIcon,
   trousers: TrousersIcon,
+  hoodie: HoodieIcon,
+  "zip-hoodie": ZipHoodieIcon,
 };
 
 const ASPECT_CLASSES: Record<string, string> = {
@@ -108,7 +112,7 @@ export function ClothingIcon({
     return (
       <div className={containerClasses}>
         <Icon
-          className="w-full h-full"
+          className="w-full h-full dark:drop-shadow-[0_0_18px_rgba(255,255,255,0.15)]"
           style={mergedStyle}
           preserveAspectRatio="xMidYMid meet"
           {...props}

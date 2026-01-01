@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List
 from bson import ObjectId
 
-from models.catalog import ColorCreate, ColorResponse
+from models.catalog import ColorCreate, ColorUpdate, ColorResponse
 from database import get_database
 from utils.auth import get_current_user
 
@@ -31,6 +31,24 @@ async def create_color(
     
     result = await db.colors.insert_one(color.model_dump())
     return await db.colors.find_one({"_id": result.inserted_id})
+
+@router.put("/{slug}", response_model=ColorResponse)
+async def update_color(
+    slug: str,
+    updates: ColorUpdate,
+    current_user: str = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    existing = await db.colors.find_one({"slug": slug})
+    if not existing:
+        raise HTTPException(404, "Color not found")
+
+    update_data = {k: v for k, v in updates.model_dump(exclude_unset=True).items() if v is not None}
+
+    if update_data:
+        await db.colors.update_one({"slug": slug}, {"$set": update_data})
+
+    return await db.colors.find_one({"slug": slug})
 
 @router.delete("/{slug}")
 async def delete_color(

@@ -9,6 +9,7 @@ import {
   Check,
   Palette,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,16 +46,17 @@ import {
   useCategories,
   useColorMutations,
 } from "@/hooks/useCatalogData";
-import type { CatalogItem } from "@/types";
+import type { CatalogItem, IconOverride } from "@/types";
 import type { Color } from "@/services/colors";
 import type { Category } from "@/services/categories";
-import { ClothingIcon } from "@/lib/icons";
+import { ClothingIcon, AVAILABLE_ICONS } from "@/lib/icons";
 
 // === Types ===
 type EditingCatalogItem = Partial<CatalogItem> & {
   category: string;
   type: string;
   icon_id: string;
+  icon_overrides: IconOverride[];
   allowed_colors: string[];
   allowed_fits: string[];
   allowed_materials: string[];
@@ -64,6 +66,7 @@ const DEFAULT_ITEM: EditingCatalogItem = {
   category: "",
   type: "",
   icon_id: "",
+  icon_overrides: [],
   allowed_colors: [],
   allowed_fits: [],
   allowed_materials: [],
@@ -317,6 +320,291 @@ function ArrayInput({
   );
 }
 
+// === Colors Manager Component ===
+function ColorsManager({
+  colors,
+  colorMutations,
+}: {
+  colors: Color[];
+  colorMutations: ReturnType<typeof useColorMutations>;
+}) {
+  const [editingColor, setEditingColor] = useState<Color | null>(null);
+  const [newColor, setNewColor] = useState({ name: "", hex: "#000000", family: "custom" });
+  const [isAddingNew, setIsAddingNew] = useState(false);
+
+  // Group colors by family
+  const colorsByFamily = useMemo(() => {
+    const groups: Record<string, Color[]> = {};
+    colors.forEach((c) => {
+      const family = c.family || "other";
+      if (!groups[family]) groups[family] = [];
+      groups[family].push(c);
+    });
+    return groups;
+  }, [colors]);
+
+  const handleAddColor = async () => {
+    if (!newColor.name.trim()) return;
+    const slug = newColor.name.toLowerCase().replace(/\s+/g, "-");
+
+    try {
+      await colorMutations.create.mutateAsync({
+        name: newColor.name.trim(),
+        slug,
+        hex: newColor.hex,
+        family: newColor.family,
+      });
+      setNewColor({ name: "", hex: "#000000", family: "custom" });
+      setIsAddingNew(false);
+      toast.success("Color added");
+    } catch {
+      toast.error("Failed to add color");
+    }
+  };
+
+  const handleUpdateColor = async () => {
+    if (!editingColor) return;
+
+    try {
+      await colorMutations.update.mutateAsync({
+        slug: editingColor.slug,
+        data: {
+          name: editingColor.name,
+          hex: editingColor.hex,
+          family: editingColor.family,
+        },
+      });
+      setEditingColor(null);
+      toast.success("Color updated");
+    } catch {
+      toast.error("Failed to update color");
+    }
+  };
+
+  const handleDeleteColor = async (slug: string, name: string) => {
+    if (!window.confirm(`Delete "${name}"? This may affect catalog items using this color.`)) return;
+
+    try {
+      await colorMutations.remove.mutateAsync(slug);
+      toast.success("Color deleted");
+    } catch {
+      toast.error("Failed to delete color");
+    }
+  };
+
+  const familyOptions = ["neutrals", "blues", "reds", "greens", "browns", "custom", "other"];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-semibold">Color Palette</h2>
+          <p className="text-sm text-muted-foreground">
+            {colors.length} colors across {Object.keys(colorsByFamily).length} families
+          </p>
+        </div>
+        <Button onClick={() => setIsAddingNew(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Color
+        </Button>
+      </div>
+
+      {/* Colors Grid by Family */}
+      {Object.entries(colorsByFamily).map(([family, familyColors]) => (
+        <Card key={family}>
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              {family} ({familyColors.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {familyColors.map((color) => (
+                <div
+                  key={color._id}
+                  className="group relative flex items-center gap-2 p-2 rounded-lg border hover:border-primary/50 transition-colors"
+                >
+                  <div
+                    className="w-8 h-8 rounded-full border-2 shadow-sm flex-shrink-0"
+                    style={{ backgroundColor: color.hex }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{color.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{color.hex}</p>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setEditingColor(color)}
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDeleteColor(color.slug, color.name)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+
+      {/* Add New Color Dialog */}
+      <Dialog open={isAddingNew} onOpenChange={setIsAddingNew}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Add New Color</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <input
+                  type="color"
+                  value={newColor.hex}
+                  onChange={(e) => setNewColor({ ...newColor, hex: e.target.value })}
+                  className="w-16 h-16 rounded-lg cursor-pointer border-2 border-border"
+                />
+              </div>
+              <div className="flex-1 space-y-2">
+                <Label>Color Name</Label>
+                <Input
+                  value={newColor.name}
+                  onChange={(e) => setNewColor({ ...newColor, name: e.target.value })}
+                  placeholder="e.g. Sage Green"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Hex Code</Label>
+              <Input
+                value={newColor.hex}
+                onChange={(e) => setNewColor({ ...newColor, hex: e.target.value })}
+                placeholder="#000000"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Family</Label>
+              <Select
+                value={newColor.family}
+                onValueChange={(v) => setNewColor({ ...newColor, family: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {familyOptions.map((f) => (
+                    <SelectItem key={f} value={f} className="capitalize">
+                      {f}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddingNew(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddColor}
+              disabled={!newColor.name.trim() || colorMutations.create.isPending}
+            >
+              {colorMutations.create.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
+              )}
+              Add Color
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Color Dialog */}
+      <Dialog open={!!editingColor} onOpenChange={(open) => !open && setEditingColor(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Edit Color</DialogTitle>
+          </DialogHeader>
+          {editingColor && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <input
+                    type="color"
+                    value={editingColor.hex}
+                    onChange={(e) => setEditingColor({ ...editingColor, hex: e.target.value })}
+                    className="w-16 h-16 rounded-lg cursor-pointer border-2 border-border"
+                  />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label>Color Name</Label>
+                  <Input
+                    value={editingColor.name}
+                    onChange={(e) => setEditingColor({ ...editingColor, name: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Hex Code</Label>
+                <Input
+                  value={editingColor.hex}
+                  onChange={(e) => setEditingColor({ ...editingColor, hex: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Family</Label>
+                <Select
+                  value={editingColor.family || "other"}
+                  onValueChange={(v) => setEditingColor({ ...editingColor, family: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {familyOptions.map((f) => (
+                      <SelectItem key={f} value={f} className="capitalize">
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Slug: <code className="bg-muted px-1 py-0.5 rounded">{editingColor.slug}</code>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingColor(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateColor}
+              disabled={colorMutations.update.isPending}
+            >
+              {colorMutations.update.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 // === Main Component ===
 export default function CatalogManager() {
   const [items, setItems] = useState<CatalogItem[]>([]);
@@ -328,11 +616,13 @@ export default function CatalogManager() {
   const [error, setError] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>("all");
 
+  const [activeTab, setActiveTab] = useState<"catalog" | "colors">("catalog");
+
   // Fetch colors and categories from DB
   const { data: colors = [], isLoading: colorsLoading } = useColors();
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories();
-  const { create: createColorMut } = useColorMutations();
+  const colorMutations = useColorMutations();
 
   useEffect(() => {
     loadData();
@@ -394,7 +684,7 @@ export default function CatalogManager() {
   };
 
   const handleAddCustomColor = async (color: Omit<Color, "_id">) => {
-    await createColorMut.mutateAsync(color);
+    await colorMutations.create.mutateAsync(color);
   };
 
   // Filtered items
@@ -444,19 +734,38 @@ export default function CatalogManager() {
             Define item types and their allowed attributes.
           </p>
         </div>
-        <Button
-          onClick={() =>
-            setEditingItem({
-              ...DEFAULT_ITEM,
-              category: categories[0]?.slug ?? "",
-            })
-          }
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Definition
-        </Button>
       </div>
 
-      {/* Category Filter */}
+      {/* Top-level Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "catalog" | "colors")} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="catalog">Catalog Items</TabsTrigger>
+          <TabsTrigger value="colors" className="gap-2">
+            <Palette className="w-4 h-4" />
+            Colors
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="colors" className="mt-0">
+          <ColorsManager colors={colors} colorMutations={colorMutations} />
+        </TabsContent>
+
+        <TabsContent value="catalog" className="mt-0 space-y-6">
+          {/* Add Button */}
+          <div className="flex justify-end">
+            <Button
+              onClick={() =>
+                setEditingItem({
+                  ...DEFAULT_ITEM,
+                  category: categories[0]?.slug ?? "",
+                })
+              }
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add Definition
+            </Button>
+          </div>
+
+          {/* Category Filter */}
       <div className="flex flex-wrap gap-2">
         <Button
           variant={filterCategory === "all" ? "default" : "outline"}
@@ -572,11 +881,13 @@ export default function CatalogManager() {
         </div>
       ))}
 
-      {filteredItems.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          No catalog items found. Add one to get started.
-        </div>
-      )}
+          {filteredItems.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              No catalog items found. Add one to get started.
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Dialog */}
       <Dialog
@@ -598,6 +909,9 @@ export default function CatalogManager() {
           >
             <TabsList className="mx-6 mt-2 w-fit">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="icons">
+                Icons ({(editingItem?.icon_overrides?.length || 0) + (editingItem?.icon_id ? 1 : 0)})
+              </TabsTrigger>
               <TabsTrigger value="colors">
                 Colors ({editingItem?.allowed_colors.length || 0})
               </TabsTrigger>
@@ -627,52 +941,6 @@ export default function CatalogManager() {
                                 className="w-4 h-4"
                               />
                               {cat.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Icon</Label>
-                    <Select
-                      value={editingItem?.icon_id || ""}
-                      onValueChange={(v) =>
-                        setEditingItem({ ...editingItem!, icon_id: v })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select icon">
-                          {editingItem?.icon_id && (
-                            <div className="flex items-center gap-2">
-                              <ClothingIcon
-                                iconId={editingItem.icon_id}
-                                className="w-4 h-4"
-                              />
-                              {editingItem.icon_id}
-                            </div>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[
-                          "shirt",
-                          "tshirt",
-                          "dress-shirt",
-                          "sweater",
-                          "jacket",
-                          "pants",
-                          "sneaker",
-                          "watch",
-                        ].map((iconId) => (
-                          <SelectItem key={iconId} value={iconId}>
-                            <div className="flex items-center gap-2">
-                              <ClothingIcon
-                                iconId={iconId}
-                                className="w-4 h-4"
-                              />
-                              {iconId}
                             </div>
                           </SelectItem>
                         ))}
@@ -736,6 +1004,216 @@ export default function CatalogManager() {
                         )}
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="icons" className="mt-0 space-y-6">
+                {/* Default Icon */}
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Default Icon</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Select or type an icon ID. This is used when no override matches.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={editingItem?.icon_id || ""}
+                      onChange={(e) =>
+                        setEditingItem({ ...editingItem!, icon_id: e.target.value })
+                      }
+                      placeholder="Enter icon ID or select below"
+                      className="flex-1"
+                    />
+                    {editingItem?.icon_id && (
+                      <div className="flex items-center justify-center w-10 h-10 border rounded-md bg-muted/30">
+                        <ClothingIcon
+                          iconId={editingItem.icon_id}
+                          className="w-6 h-6"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <ScrollArea className="h-[140px] border rounded-md p-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {AVAILABLE_ICONS.map((iconId) => (
+                        <button
+                          key={iconId}
+                          type="button"
+                          onClick={() =>
+                            setEditingItem({ ...editingItem!, icon_id: iconId })
+                          }
+                          className={cn(
+                            "flex flex-col items-center gap-1 p-2 rounded-lg border transition-all",
+                            editingItem?.icon_id === iconId
+                              ? "border-primary bg-primary/10"
+                              : "border-transparent hover:border-muted-foreground/30 hover:bg-muted/50"
+                          )}
+                        >
+                          <ClothingIcon iconId={iconId} className="w-6 h-6" />
+                          <span className="text-[9px] font-medium truncate w-full text-center">
+                            {iconId}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                {/* Icon Overrides */}
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-semibold">Icon Overrides</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Use different icons for specific fits or materials.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setEditingItem({
+                          ...editingItem!,
+                          icon_overrides: [
+                            ...(editingItem?.icon_overrides || []),
+                            { match: {}, icon_id: "" },
+                          ],
+                        })
+                      }
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Add Override
+                    </Button>
+                  </div>
+
+                  {(editingItem?.icon_overrides || []).length === 0 && (
+                    <div className="text-center py-6 text-muted-foreground border border-dashed rounded-lg">
+                      No overrides yet. Add one to use different icons for specific fits or materials.
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {(editingItem?.icon_overrides || []).map((override, idx) => (
+                      <Card key={idx} className="p-4">
+                        <div className="flex gap-4 items-start">
+                          {/* Match conditions */}
+                          <div className="flex-1 space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs">When Fit =</Label>
+                                <Select
+                                  value={override.match.fit || ""}
+                                  onValueChange={(v) => {
+                                    const newOverrides = [...(editingItem?.icon_overrides || [])];
+                                    newOverrides[idx] = {
+                                      ...newOverrides[idx],
+                                      match: { ...newOverrides[idx].match, fit: v || undefined },
+                                    };
+                                    setEditingItem({ ...editingItem!, icon_overrides: newOverrides });
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Any fit" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="">Any fit</SelectItem>
+                                    {(editingItem?.allowed_fits || []).map((f) => (
+                                      <SelectItem key={f} value={f} className="capitalize">
+                                        {f}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">When Material =</Label>
+                                <Select
+                                  value={override.match.material || ""}
+                                  onValueChange={(v) => {
+                                    const newOverrides = [...(editingItem?.icon_overrides || [])];
+                                    newOverrides[idx] = {
+                                      ...newOverrides[idx],
+                                      match: { ...newOverrides[idx].match, material: v || undefined },
+                                    };
+                                    setEditingItem({ ...editingItem!, icon_overrides: newOverrides });
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Any material" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="">Any material</SelectItem>
+                                    {(editingItem?.allowed_materials || []).map((m) => (
+                                      <SelectItem key={m} value={m} className="capitalize">
+                                        {m}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Use Icon</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  value={override.icon_id}
+                                  onChange={(e) => {
+                                    const newOverrides = [...(editingItem?.icon_overrides || [])];
+                                    newOverrides[idx] = { ...newOverrides[idx], icon_id: e.target.value };
+                                    setEditingItem({ ...editingItem!, icon_overrides: newOverrides });
+                                  }}
+                                  placeholder="Icon ID"
+                                  className="flex-1 h-8"
+                                />
+                                <Select
+                                  value={override.icon_id}
+                                  onValueChange={(v) => {
+                                    const newOverrides = [...(editingItem?.icon_overrides || [])];
+                                    newOverrides[idx] = { ...newOverrides[idx], icon_id: v };
+                                    setEditingItem({ ...editingItem!, icon_overrides: newOverrides });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-[100px] h-8">
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {AVAILABLE_ICONS.map((iconId) => (
+                                      <SelectItem key={iconId} value={iconId}>
+                                        <div className="flex items-center gap-2">
+                                          <ClothingIcon iconId={iconId} className="w-4 h-4" />
+                                          {iconId}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Preview and Delete */}
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-12 h-12 border rounded-md bg-muted/30 flex items-center justify-center">
+                              <ClothingIcon iconId={override.icon_id} className="w-8 h-8" />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                const newOverrides = (editingItem?.icon_overrides || []).filter(
+                                  (_, i) => i !== idx
+                                );
+                                setEditingItem({ ...editingItem!, icon_overrides: newOverrides });
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
                 </div>
               </TabsContent>

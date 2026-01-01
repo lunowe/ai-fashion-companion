@@ -10,6 +10,7 @@ export type Color = {
 };
 
 export type ColorCreate = Omit<Color, "_id">;
+export type ColorUpdate = Partial<Omit<Color, "_id" | "slug">>;
 
 export async function listColors(family?: string): Promise<Color[]> {
   const params = family ? { family } : undefined;
@@ -19,6 +20,11 @@ export async function listColors(family?: string): Promise<Color[]> {
 
 export async function createColor(payload: ColorCreate): Promise<Color> {
   const { data } = await api.post("/api/colors/", payload);
+  return data;
+}
+
+export async function updateColor(slug: string, payload: ColorUpdate): Promise<Color> {
+  const { data } = await api.put(`/api/colors/${slug}`, payload);
   return data;
 }
 

@@ -19,9 +19,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+import { listCatalogItems } from "@/services/catalog";
 import { useColors, useCategories } from "@/hooks/useCatalogData";
 import { ClothingIcon } from "@/lib/icons";
 import type { Color } from "@/services/colors";
+import type { CatalogItem } from "@/types";
 
 // Common fits as suggestions (could also come from DB eventually)
 const COMMON_FITS = [
@@ -58,21 +60,56 @@ export default function WardrobeEditModal({
   const [notes, setNotes] = useState("");
   const [imageUrl, setImageUrl] = useState("");
 
+  // Catalog definition for the current item type (for filtering colors/fits)
+  const [catalogDefinition, setCatalogDefinition] = useState<CatalogItem | null>(null);
+
   // Fetch from DB
   const { data: colors = [], isLoading: colorsLoading } = useColors();
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories();
 
+  // Fetch catalog definition when item changes
+  useEffect(() => {
+    if (item?.type && item?.category) {
+      listCatalogItems().then((items) => {
+        const match = items.find(
+          (cat) =>
+            cat.type.toLowerCase() === item.type.toLowerCase() &&
+            cat.category === item.category
+        );
+        setCatalogDefinition(match || null);
+      });
+    } else {
+      setCatalogDefinition(null);
+    }
+  }, [item?.type, item?.category]);
+
+  // Filter colors based on catalog definition
+  const filteredColors = useMemo(() => {
+    if (!catalogDefinition?.allowed_colors?.length) {
+      return colors; // Show all if no restrictions
+    }
+    return colors.filter((c) => catalogDefinition.allowed_colors.includes(c.slug));
+  }, [colors, catalogDefinition]);
+
+  // Available fits based on catalog definition
+  const availableFits = useMemo(() => {
+    if (catalogDefinition?.allowed_fits?.length) {
+      return catalogDefinition.allowed_fits;
+    }
+    return COMMON_FITS; // Fallback to defaults
+  }, [catalogDefinition]);
+
   // Group colors by family for display
   const colorsByFamily = useMemo(() => {
     const groups: Record<string, Color[]> = {};
-    colors.forEach((c) => {
+    filteredColors.forEach((c) => {
       const family = c.family || "other";
       if (!groups[family]) groups[family] = [];
       groups[family].push(c);
     });
     return groups;
-  }, [colors]);
+  }, [filteredColors]);
 
   // Color lookup helper
   const getColorHex = (colorOrSlug: string): string => {
@@ -308,7 +345,7 @@ export default function WardrobeEditModal({
               <div className="space-y-3">
                 <Label>Fit</Label>
                 <div className="flex flex-wrap gap-2">
-                  {COMMON_FITS.map((f) => (
+                  {availableFits.map((f) => (
                     <Button
                       key={f}
                       type="button"
@@ -327,6 +364,7 @@ export default function WardrobeEditModal({
                   ))}
                 </div>
 
+                {/* Custom fit input - always available */}
                 <Input
                   value={fit}
                   onChange={(e) => setFit(e.target.value)}
