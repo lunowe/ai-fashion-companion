@@ -399,7 +399,7 @@ export default function TravelWizard({
               </Badge>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3">
               {viewingSuitcase.packing_list.map((packItem, idx) => {
                 const item = getClothingItem(packItem.item_id);
                 if (!item) return null;
@@ -440,29 +440,33 @@ export default function TravelWizard({
 
                     {/* Content Area */}
                     <div className="flex flex-1 flex-col justify-center min-w-0 gap-1">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 capitalize">
                         <span className="font-semibold text-sm capitalize truncate transition-colors">
-                          {item.type}
+                          {item.fit} {item.type}
                         </span>
-                        {/* Optional: Checkbox or Remove button could go here */}
-                      </div>
-
-                      {/* Metadata Row */}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="capitalize">{item.category}</span>
-                        <span className="h-1 w-1 rounded-full bg-border" />{" "}
-                        {/* Separator Dot */}
-                        <span className="capitalize">{item.fit}</span>
-                      </div>
-
-                      {/* Color Indicator */}
-                      <div className="flex items-center gap-1.5 mt-0.5">
                         <div
                           className="h-2.5 w-2.5 rounded-full border border-border shadow-sm"
                           style={{ backgroundColor: colorHex }}
                         />
-                        <span className="text-[10px] text-muted-foreground capitalize">
+                        <span className="text-xs text-muted-foreground capitalize">
                           {item.color}
+                        </span>
+                        <span className="text-xs text-muted-foreground capitalize">
+                          |
+                        </span>
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {item.category}
+                        </span>
+                      </div>
+
+                      {/* Clothing Item Reason */}
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground capitalize">
+                          {packItem.reason && (
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              {packItem.reason}
+                            </div>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -472,43 +476,135 @@ export default function TravelWizard({
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Daily Outfits</h3>
-            {viewingSuitcase.daily_outfits.map((outfit, idx) => {
-              const outfitItems = outfit.items
-                .map(getClothingItem)
-                .filter(Boolean) as ClothingItem[];
-              return (
-                <Card key={idx} className="border bg-card/95">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">
-                      Day {outfit.day}: {outfit.occasion}
-                    </CardTitle>
-                    {outfit.reasoning && (
-                      <CardDescription className="text-xs">
-                        {outfit.reasoning}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {outfitItems.map((item, iIdx) => (
-                      <div
-                        key={iIdx}
-                        className="flex items-center gap-3 rounded-xl border bg-background/80 px-3 py-2"
-                      >
-                        <span className="text-xl">
-                          {getPieceEmoji(item.category)}
-                        </span>
-                        <span className="text-xs font-medium">
-                          {getPieceLabel(item)}
-                        </span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </section>
+          {/* Versatility Insight */}
+          {viewingSuitcase.versatility_insights && (
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs">
+              <Sparkles className="w-4 h-4 text-primary inline mr-2" />
+              {viewingSuitcase.versatility_insights}
+            </div>
+          )}
+
+          {/* Daily Outfits Carousel */}
+          {viewingSuitcase.daily_outfits.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Daily Outfits</h3>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() =>
+                      setCurrentOutfitIndex((prev) => Math.max(0, prev - 1))
+                    }
+                    disabled={currentOutfitIndex === 0}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Day {currentOutfitIndex + 1} of{" "}
+                    {viewingSuitcase.daily_outfits.length}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() =>
+                      setCurrentOutfitIndex((prev) =>
+                        Math.min(
+                          viewingSuitcase.daily_outfits.length - 1,
+                          prev + 1
+                        )
+                      )
+                    }
+                    disabled={
+                      currentOutfitIndex ===
+                      viewingSuitcase.daily_outfits.length - 1
+                    }
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {viewingSuitcase.daily_outfits.map((outfit, idx) => {
+                  if (idx !== currentOutfitIndex) return null;
+                  const outfitItems = outfit.items
+                    .map(getClothingItem)
+                    .filter(Boolean) as ClothingItem[];
+                  return (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Card className="border border-border/70 bg-card/95">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm">
+                              Day {outfit.day}: {outfit.occasion}
+                            </CardTitle>
+                            {outfit.date && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {outfit.date}
+                              </span>
+                            )}
+                          </div>
+                          {outfit.reasoning && (
+                            <CardDescription className="text-xs">
+                              {outfit.reasoning}
+                            </CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          {outfitItems.map((item, iIdx) => (
+                            <div
+                              key={iIdx}
+                              className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/80 px-3 py-2"
+                            >
+                              <span className="text-2xl">
+                                {getPieceEmoji(item.category)}
+                              </span>
+                              <div className="flex-1">
+                                <div className="text-xs font-medium">
+                                  {getPieceLabel(item)}
+                                </div>
+                                {item.fit && (
+                                  <div className="text-[10px] text-muted-foreground capitalize">
+                                    {item.fit}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="cursor-pointer w-full text-xs mt-2"
+                            onClick={() => {
+                              onSaveOutfit({
+                                name: `${destination} - Day ${outfit.day}`,
+                                style_id: selectedStyles[0] || "",
+                                items: outfit.items,
+                                occasion: outfit.occasion,
+                                ai_generated_reasoning: outfit.reasoning,
+                              });
+                            }}
+                          >
+                            Save this outfit
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </section>
+          )}
         </main>
 
         {/* Suitcase Editor Dialog */}
@@ -985,32 +1081,84 @@ export default function TravelWizard({
                   )}
 
                   {/* Packing List */}
-                  <section className="space-y-3">
-                    <h3 className="text-sm font-semibold flex items-center gap-2">
-                      <Luggage className="w-4 h-4" />
-                      Packing List ({suitcaseResult.packing_list.length} items)
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <section className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">Packing List</h3>
+                      <Badge variant="outline" className="text-xs">
+                        {suitcaseResult.packing_list.length} items
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {suitcaseResult.packing_list.map((packItem, idx) => {
                         const item = getClothingItem(packItem.item_id);
                         if (!item) return null;
+
+                        // Ensure we have the display variables (assuming you have these helpers available)
+                        // If these helpers aren't global, you might need to copy the logic from your main card
+                        const colorHex = item.color_code || "#e5e7eb"; // Fallback color
+                        const effectiveIconId = getEffectiveIconId(
+                          item.icon_id,
+                          item.category
+                        );
+
                         return (
                           <div
                             key={idx}
-                            className="flex items-center gap-3 rounded-xl border border-border/70 bg-card px-3 py-2"
+                            className="group relative flex items-center gap-3 overflow-hidden rounded-lg border bg-card p-2 transition-all duration-300"
                           >
-                            <span className="text-2xl">
-                              {getPieceEmoji(item.category)}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs font-medium truncate">
-                                {getPieceLabel(item)}
-                              </div>
-                              {packItem.reason && (
-                                <div className="text-[10px] text-muted-foreground truncate">
-                                  {packItem.reason}
+                            {/* Mini Image / Icon Area */}
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted/10">
+                              {item.image_url ? (
+                                <img
+                                  src={item.image_url}
+                                  alt={item.type}
+                                  className="h-full w-full object-cover transition-transform duration-300"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <ClothingIcon
+                                    iconId={effectiveIconId}
+                                    color={colorHex}
+                                    size="sm" // Slightly smaller than main card
+                                    strokeWidth={2}
+                                    className="text-muted-foreground/40"
+                                  />
                                 </div>
                               )}
+                            </div>
+
+                            {/* Content Area */}
+                            <div className="flex flex-1 flex-col justify-center min-w-0 gap-1">
+                              <div className="flex items-center gap-2 capitalize">
+                                <span className="font-semibold text-sm capitalize truncate transition-colors">
+                                  {item.fit} {item.type}
+                                </span>
+                                <div
+                                  className="h-2.5 w-2.5 rounded-full border border-border shadow-sm"
+                                  style={{ backgroundColor: colorHex }}
+                                />
+                                <span className="text-xs text-muted-foreground capitalize">
+                                  {item.color}
+                                </span>
+                                <span className="text-xs text-muted-foreground capitalize">
+                                  |
+                                </span>
+                                <span className="text-xs text-muted-foreground capitalize">
+                                  {item.category}
+                                </span>
+                              </div>
+
+                              {/* Clothing Item Reason */}
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground capitalize">
+                                  {packItem.reason && (
+                                    <div className="text-[10px] text-muted-foreground truncate">
+                                      {packItem.reason}
+                                    </div>
+                                  )}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
