@@ -1,3 +1,33 @@
+// User & Usage Types
+export type UsageCounts = {
+  outfit_generation: number;
+  suitcase_generation: number;
+  visualization: number;
+};
+
+export type FeatureType =
+  | "outfit_generation"
+  | "suitcase_generation"
+  | "visualization";
+
+export type FeatureLimits = Record<FeatureType, Record<string, number>>;
+
+export const FEATURE_LIMITS: FeatureLimits = {
+  outfit_generation: { free: 5, premium: 20, byok: Infinity },
+  suitcase_generation: { free: 0, premium: 10, byok: Infinity },
+  visualization: { free: 3, premium: 25, byok: Infinity },
+};
+
+export type User = {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  usage_counts: UsageCounts;
+  last_reset_date: string;
+  api_key?: string;
+};
+
 export type ClothingItem = {
   _id: string;
   user_id?: string;
@@ -144,6 +174,9 @@ export type TravelSuitcase = {
   updated_at?: string;
 };
 
-export type TravelSuitcaseCreate = Omit<TravelSuitcase, "_id" | "user_id" | "created_at" | "updated_at">;
+export type TravelSuitcaseCreate = Omit<
+  TravelSuitcase,
+  "_id" | "user_id" | "created_at" | "updated_at"
+>;
 
 export type TravelSuitcaseUpdate = Partial<TravelSuitcaseCreate>;

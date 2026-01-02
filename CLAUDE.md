@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FitFlow is an AI-powered wardrobe management and outfit generation app. Users upload clothing items, and the AI generates outfit combinations based on style, occasion, and weather.
+FitFlow is an AI-powered wardrobe management and outfit generation app. Users choose their clothing items, and the AI generates outfit combinations based on style, occasion, and weather.
 
 ## Commands
 
@@ -31,11 +31,13 @@ docker run -p 8000:8000 fitflow-backend
 ## Architecture
 
 ### Tech Stack
+
 - **Backend**: FastAPI (async), MongoDB (Motor), JWT auth, AWS S3, LlamaIndex with OpenRouter/Gemini
 - **Frontend**: React 19, TypeScript, Vite, shadcn/ui (New York style), Tailwind CSS v4, React Query
 - **Landing**: Next.js 16, React 19, Tailwind CSS v4
 
 ### Key Data Flow
+
 1. **Clothing**: User uploads image → Base64 → Backend stores metadata in MongoDB + image in S3 → Pre-signed URLs on retrieval
 2. **Outfit Generation**: User selects style/occasion/weather → Backend fetches wardrobe → LLM prompt with reference images → JSON response with outfit combinations
 3. **Auth**: JWT access (30min) + refresh (7 days) tokens, auto-refresh middleware, Axios interceptors for token refresh
@@ -43,6 +45,7 @@ docker run -p 8000:8000 fitflow-backend
 ### Backend Patterns
 
 Routes use async MongoDB with auth dependency:
+
 ```python
 @router.post("/")
 async def create_item(
@@ -58,6 +61,7 @@ Pydantic models: `Base` → `Create` → `Update` → `Response`. Always convert
 ### Frontend Patterns
 
 API calls via configured axios instance:
+
 ```typescript
 import { api } from "@/lib/api";
 export async function listItems(): Promise<Item[]> {

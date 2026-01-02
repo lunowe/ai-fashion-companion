@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
-from models.user import UserCreate, UserResponse, Token, UserInDB
+from models.user import UserCreate, UserResponse, Token, UserInDB, UsageCounts
 from bson import ObjectId
 from fastapi import Body
 from utils.auth import get_password_hash, verify_password, create_access_token, create_refresh_token, get_current_user
 from jose import JWTError, jwt
 from config import settings
 from models.user import TokenData
+from utils.user_helpers import user_doc_to_response
 
 router = APIRouter()
 
@@ -58,17 +59,7 @@ async def register(user: UserCreate, request: Request):
         }
     )
 
-    # Return response
-    return UserResponse(
-        id=str(created_user["_id"]),
-        username=created_user["username"],
-        email=created_user["email"],
-        created_at=created_user["created_at"],
-        role=created_user.get("role", "free"),
-        generation_count=created_user.get("generation_count", 0),
-        last_reset_date=created_user.get("last_reset_date", datetime.now()),
-        api_key=created_user.get("api_key")
-    )
+    return user_doc_to_response(created_user)
 
 @router.put("/users/me/settings", response_model=UserResponse)
 async def update_user_settings(
@@ -92,6 +83,8 @@ async def update_user_settings(
     
     updated_user = await request.app.mongodb["users"].find_one({"_id": ObjectId(current_user.id)})
     
+    return user_doc_to_response(updated_user)
+
     return UserResponse(
         id=str(updated_user["_id"]),
         username=updated_user["username"],
@@ -166,6 +159,8 @@ async def read_users_me(
     user = await request.app.mongodb["users"].find_one({"username": current_user.username})
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    return user_doc_to_response(user)
         
     return UserResponse(
         id=str(user["_id"]),

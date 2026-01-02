@@ -8,6 +8,7 @@ from models.user import TokenData, UserResponse
 from database import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import bcrypt
+from utils.user_helpers import user_doc_to_response
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/token")
@@ -83,6 +84,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncIOMotor
             {"$set": {"last_reset_date": now}}
         )
         user["last_reset_date"] = now
+
+    return user_doc_to_response(user)
 
     return UserResponse(
         id=str(user["_id"]),

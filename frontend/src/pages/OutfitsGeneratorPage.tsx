@@ -23,6 +23,7 @@ import type {
   TravelSuitcaseCreate,
   TravelSuitcaseUpdate,
 } from "@/types";
+import { FEATURE_LIMITS } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -47,16 +48,15 @@ export default function OutfitGeneratorPage() {
   const { user } = useAuth();
   const [mode, setMode] = useState<GeneratorMode>("outfit");
 
-  const LIMITS: Record<string, number> = {
-    free: 5,
-    premium: 50,
-    byok: Infinity,
-  };
-  const limit = user ? LIMITS[user.role] || 5 : 5;
+  // Get limit for outfit generation feature
+  const outfitLimit = user
+    ? FEATURE_LIMITS.outfit_generation[user.role] ?? 5
+    : 5;
+  const outfitCount = user?.usage_counts?.outfit_generation ?? 0;
   const isLimitReached = !!(
     user &&
-    limit !== Infinity &&
-    user.generation_count >= limit
+    outfitLimit !== Infinity &&
+    outfitCount >= outfitLimit
   );
 
   const qc = useQueryClient();
@@ -135,7 +135,10 @@ export default function OutfitGeneratorPage() {
     onError: () => toast.error("Failed to update suitcase"),
   });
 
-  const handleUpdateSuitcase = async (id: string, data: TravelSuitcaseUpdate) => {
+  const handleUpdateSuitcase = async (
+    id: string,
+    data: TravelSuitcaseUpdate
+  ) => {
     await updateSuitcaseMut.mutateAsync({ id, data });
   };
 
@@ -233,7 +236,7 @@ export default function OutfitGeneratorPage() {
         >
           <p className="font-bold">Daily Limit Reached</p>
           <p>
-            You have used all {limit} generations for today.
+            You have used all {outfitLimit} outfit generations for today.
             <Link
               to="/settings"
               className="underline ml-1 font-semibold hover:text-amber-900"

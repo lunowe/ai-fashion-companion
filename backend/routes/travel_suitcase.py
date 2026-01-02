@@ -18,6 +18,7 @@ from models.travel_suitcase import (
 )
 from database import get_database
 from services.travel_suitcase_generator import TravelSuitcaseGenerator
+from services.usage_limiter import require_suitcase_gen
 
 router = APIRouter()
 suitcase_generator = TravelSuitcaseGenerator()
@@ -54,7 +55,7 @@ def check_pro_access(user: UserResponse):
 async def generate_suitcase(
     request: Request,
     suitcase_request: SuitcaseGenRequest = Body(...),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(require_suitcase_gen),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     """
@@ -64,35 +65,7 @@ async def generate_suitcase(
     PRO FEATURE: Only available to premium and byok tiers.
     """
     user_id = current_user.id
-
-    # Check pro access
-    check_pro_access(current_user)
-
-    # --- RATE LIMIT CHECK (shares limit with outfit generation) ---
-    LIMITS = {
-        "premium": 50,
-        "byok": float("inf")
-    }
-
     current_time = datetime.now(timezone.utc)
-    last_reset = current_user.last_reset_date
-
-    # Reset if it's a new day
-    if last_reset.date() < current_time.date():
-        await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {"generation_count": 0, "last_reset_date": current_time}}
-        )
-        current_user.generation_count = 0
-
-    limit = LIMITS.get(current_user.role, 50)
-
-    if current_user.generation_count >= limit:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Daily generation limit reached for {current_user.role} tier. Limit: {limit}"
-        )
-    # ---------------------------------
 
     # Validate dates
     if suitcase_request.end_date < suitcase_request.start_date:
@@ -148,11 +121,7 @@ async def generate_suitcase(
         )
 
         # Increment generation count
-        await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$inc": {"generation_count": 1}}
-        )
-
+        await require_suitcase_gen.increment(current_user.id, db)
         return result
 
     except Exception as e:

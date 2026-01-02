@@ -14,6 +14,8 @@ from database import get_database
 from services.outfit_generator import OutfitGenerator
 from services.outfit_visualizer import OutfitVisualizer
 from utils.s3_service import s3_service
+from services.usage_limiter import require_outfit_gen, require_visualization
+
 import uuid
 
 router = APIRouter()
@@ -49,38 +51,12 @@ def _add_presigned_url_to_outfit(outfit: Dict) -> Dict:
 async def generate_outfits(
     request: Request,
     outfit_request: OutfitGenRequest = Body(...),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(require_outfit_gen),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     user_id = current_user.id
-    
-    # --- LIMIT CHECK & RESET LOGIC ---
-    LIMITS = {
-        "free": 5,
-        "premium": 50,
-        "byok": float("inf")
-    }
-    
     current_time = datetime.now(timezone.utc)
-    last_reset = current_user.last_reset_date
-    
-    # Reset if it's a new day (simple check: different date)
-    if last_reset.date() < current_time.date():
-        await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": {"generation_count": 0, "last_reset_date": current_time}}
-        )
-        current_user.generation_count = 0
-    
     user_role = current_user.role
-    limit = LIMITS.get(user_role, 5)
-    
-    if current_user.generation_count >= limit:
-        raise HTTPException(
-            status_code=403, 
-            detail=f"Daily generation limit reached for {user_role} tier. Limit: {limit}"
-        )
-    # ---------------------------------
     
     # Get the style
     style = await db.styles.find_one({"_id": ObjectId(outfit_request.style_id)})
@@ -141,10 +117,10 @@ async def generate_outfits(
         }
 
         # Update User: Increment count AND Push to history (keeping only last 5)
+        await require_outfit_gen.increment(current_user.id, db)
         await db.users.update_one(
             {"_id": ObjectId(user_id)},
             {
-                "$inc": {"generation_count": 1},
                 "$push": {
                     "generation_history": {
                         "$each": [history_entry],
@@ -377,7 +353,7 @@ async def run_visualization_task(
 async def visualize_outfit(
     id: str,
     background_tasks: BackgroundTasks,
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(require_visualization),
     db: AsyncIOMotorDatabase = Depends(get_database),
     regenerate: bool = False,
 ):
@@ -429,6 +405,7 @@ async def visualize_outfit(
     style = await db.styles.find_one({"_id": ObjectId(outfit.get("style_id"))})
     
     # Mark as pending
+    await require_visualization.increment(current_user.id, db)
     await db.outfits.update_one(
         {"_id": ObjectId(id)},
         {"$set": {"visualization_status": "pending"}}
