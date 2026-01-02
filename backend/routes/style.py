@@ -10,6 +10,7 @@ from models.style import Style, StyleCreate, StyleUpdate
 from database import get_database
 from bson import ObjectId
 from utils.s3_service import s3_service
+from services.usage_limiter import custom_styles_limiter
 
 router = APIRouter()
 
@@ -67,6 +68,9 @@ async def create_style(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     user_id = current_user.id
+    
+    # Check custom styles limit
+    await custom_styles_limiter.check_limit(current_user, db)
     
     style_data = jsonable_encoder(style)
     style_data["user_id"] = user_id

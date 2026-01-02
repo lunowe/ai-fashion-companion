@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listClothing } from "@/services/clothing";
-import type { TravelSuitcase, TravelSuitcaseUpdate, ClothingItem, PackingItem, DailyOutfit } from "@/types";
+import type {
+  TravelSuitcase,
+  TravelSuitcaseUpdate,
+  ClothingItem,
+  PackingItem,
+  DailyOutfit,
+} from "@/types";
 
 import {
   Dialog,
@@ -20,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, X, Check, Search, Luggage, Calendar } from "lucide-react";
 import { ClothingIcon } from "@/lib/icons";
+import { useEffectiveIconId } from "@/hooks/useCatalogData";
 import { cn } from "@/lib/utils";
 
 interface SuitcaseEditorDialogProps {
@@ -37,6 +44,9 @@ export function SuitcaseEditorDialog({
   onSave,
   isSaving,
 }: SuitcaseEditorDialogProps) {
+  // Hooks
+  const getEffectiveIconId = useEffectiveIconId();
+
   // Form state
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
@@ -44,7 +54,9 @@ export function SuitcaseEditorDialog({
   const [dailyOutfits, setDailyOutfits] = useState<DailyOutfit[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"packing" | "outfits">("packing");
-  const [editingOutfitIndex, setEditingOutfitIndex] = useState<number | null>(null);
+  const [editingOutfitIndex, setEditingOutfitIndex] = useState<number | null>(
+    null
+  );
 
   // Data queries
   const { data: clothing } = useQuery({
@@ -162,20 +174,33 @@ export function SuitcaseEditorDialog({
             </div>
 
             {/* Tabs for Packing List / Daily Outfits */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "packing" | "outfits")} className="flex-1 flex flex-col min-h-0">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "packing" | "outfits")}
+              className="flex-1 flex flex-col min-h-0"
+            >
               <TabsList className="grid w-full grid-cols-2 shrink-0">
-                <TabsTrigger value="packing" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="packing"
+                  className="flex items-center gap-2"
+                >
                   <Luggage className="w-4 h-4" />
                   Packing List ({packingList.length})
                 </TabsTrigger>
-                <TabsTrigger value="outfits" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="outfits"
+                  className="flex items-center gap-2"
+                >
                   <Calendar className="w-4 h-4" />
                   Daily Outfits ({dailyOutfits.length})
                 </TabsTrigger>
               </TabsList>
 
               {/* Packing List Tab */}
-              <TabsContent value="packing" className="flex-1 flex flex-col min-h-0 mt-4">
+              <TabsContent
+                value="packing"
+                className="flex-1 flex flex-col min-h-0 mt-4"
+              >
                 {/* Selected Items */}
                 {packingList.length > 0 && (
                   <div className="space-y-2 mb-4 shrink-0">
@@ -204,7 +229,10 @@ export function SuitcaseEditorDialog({
                             onClick={() => togglePackingItem(packItem.item_id)}
                           >
                             <ClothingIcon
-                              iconId={item.icon_id}
+                              iconId={getEffectiveIconId(
+                                item.icon_id,
+                                item.category
+                              )}
                               className="w-3 h-3"
                               color={item.color_code}
                             />
@@ -240,45 +268,53 @@ export function SuitcaseEditorDialog({
                           No clothing items found.
                         </div>
                       ) : (
-                        Object.entries(clothingByCategory).map(([category, items]) => (
-                          <div key={category}>
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                              {category}
-                            </h4>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                              {items.map((item) => {
-                                const isSelected = getPackingItemIds().includes(item._id);
-                                return (
-                                  <button
-                                    key={item._id}
-                                    type="button"
-                                    onClick={() => togglePackingItem(item._id)}
-                                    className={cn(
-                                      "group relative flex flex-col items-center justify-center p-2 rounded-lg border transition-all text-center aspect-square",
-                                      isSelected
-                                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                        : "border-border hover:border-primary/50"
-                                    )}
-                                  >
-                                    {isSelected && (
-                                      <div className="absolute top-1 right-1 z-10 bg-primary text-primary-foreground rounded-full p-0.5">
-                                        <Check className="w-2.5 h-2.5" />
-                                      </div>
-                                    )}
-                                    <ClothingIcon
-                                      iconId={item.icon_id}
-                                      color={item.color_code}
-                                      className="w-10 h-10"
-                                    />
-                                    <span className="text-[10px] capitalize truncate w-full mt-1">
-                                      {item.type}
-                                    </span>
-                                  </button>
-                                );
-                              })}
+                        Object.entries(clothingByCategory).map(
+                          ([category, items]) => (
+                            <div key={category}>
+                              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                {category}
+                              </h4>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                {items.map((item) => {
+                                  const isSelected =
+                                    getPackingItemIds().includes(item._id);
+                                  return (
+                                    <button
+                                      key={item._id}
+                                      type="button"
+                                      onClick={() =>
+                                        togglePackingItem(item._id)
+                                      }
+                                      className={cn(
+                                        "group relative flex flex-col items-center justify-center p-2 rounded-lg border transition-all text-center aspect-square",
+                                        isSelected
+                                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                          : "border-border hover:border-primary/50"
+                                      )}
+                                    >
+                                      {isSelected && (
+                                        <div className="absolute top-1 right-1 z-10 bg-primary text-primary-foreground rounded-full p-0.5">
+                                          <Check className="w-2.5 h-2.5" />
+                                        </div>
+                                      )}
+                                      <ClothingIcon
+                                        iconId={getEffectiveIconId(
+                                          item.icon_id,
+                                          item.category
+                                        )}
+                                        color={item.color_code}
+                                        className="w-10 h-10"
+                                      />
+                                      <span className="text-[10px] capitalize truncate w-full mt-1">
+                                        {item.type}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          )
+                        )
                       )}
                     </div>
                   </ScrollArea>
@@ -286,7 +322,10 @@ export function SuitcaseEditorDialog({
               </TabsContent>
 
               {/* Daily Outfits Tab */}
-              <TabsContent value="outfits" className="flex-1 flex flex-col min-h-0 mt-4">
+              <TabsContent
+                value="outfits"
+                className="flex-1 flex flex-col min-h-0 mt-4"
+              >
                 <ScrollArea className="flex-1 -mr-3 pr-3">
                   <div className="space-y-4 pb-2">
                     {dailyOutfits.length === 0 ? (
@@ -296,10 +335,18 @@ export function SuitcaseEditorDialog({
                     ) : (
                       dailyOutfits.map((outfit, idx) => {
                         const isEditing = editingOutfitIndex === idx;
-                        const outfitItems = outfit.items.map(getClothingItem).filter(Boolean) as ClothingItem[];
+                        const outfitItems = outfit.items
+                          .map(getClothingItem)
+                          .filter(Boolean) as ClothingItem[];
 
                         return (
-                          <Card key={idx} className={cn("border", isEditing && "ring-2 ring-primary")}>
+                          <Card
+                            key={idx}
+                            className={cn(
+                              "border",
+                              isEditing && "ring-2 ring-primary"
+                            )}
+                          >
                             <CardHeader className="py-3 px-4">
                               <div className="flex items-center justify-between">
                                 <CardTitle className="text-sm">
@@ -308,7 +355,11 @@ export function SuitcaseEditorDialog({
                                 <Button
                                   variant={isEditing ? "secondary" : "ghost"}
                                   size="sm"
-                                  onClick={() => setEditingOutfitIndex(isEditing ? null : idx)}
+                                  onClick={() =>
+                                    setEditingOutfitIndex(
+                                      isEditing ? null : idx
+                                    )
+                                  }
                                 >
                                   {isEditing ? "Done" : "Edit"}
                                 </Button>
@@ -323,17 +374,28 @@ export function SuitcaseEditorDialog({
                                     variant="secondary"
                                     className={cn(
                                       "pl-2 pr-1 py-1 gap-1 transition-colors",
-                                      isEditing && "cursor-pointer hover:bg-destructive/10 hover:text-destructive"
+                                      isEditing &&
+                                        "cursor-pointer hover:bg-destructive/10 hover:text-destructive"
                                     )}
-                                    onClick={() => isEditing && toggleOutfitItem(idx, item._id)}
+                                    onClick={() =>
+                                      isEditing &&
+                                      toggleOutfitItem(idx, item._id)
+                                    }
                                   >
                                     <ClothingIcon
-                                      iconId={item.icon_id}
+                                      iconId={getEffectiveIconId(
+                                        item.icon_id,
+                                        item.category
+                                      )}
                                       className="w-3 h-3"
                                       color={item.color_code}
                                     />
-                                    <span className="capitalize">{item.type}</span>
-                                    {isEditing && <X className="w-3 h-3 ml-1 opacity-50" />}
+                                    <span className="capitalize">
+                                      {item.type}
+                                    </span>
+                                    {isEditing && (
+                                      <X className="w-3 h-3 ml-1 opacity-50" />
+                                    )}
                                   </Badge>
                                 ))}
                               </div>
@@ -341,31 +403,49 @@ export function SuitcaseEditorDialog({
                               {/* Add items when editing */}
                               {isEditing && (
                                 <div className="pt-2 border-t space-y-2">
-                                  <Label className="text-xs">Add items from packing list:</Label>
+                                  <Label className="text-xs">
+                                    Add items from packing list:
+                                  </Label>
                                   <div className="flex flex-wrap gap-2">
                                     {packingList
-                                      .filter((p) => !outfit.items.includes(p.item_id))
+                                      .filter(
+                                        (p) => !outfit.items.includes(p.item_id)
+                                      )
                                       .map((packItem) => {
-                                        const item = getClothingItem(packItem.item_id);
+                                        const item = getClothingItem(
+                                          packItem.item_id
+                                        );
                                         if (!item) return null;
                                         return (
                                           <Badge
                                             key={packItem.item_id}
                                             variant="outline"
                                             className="pl-2 pr-2 py-1 gap-1 cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors"
-                                            onClick={() => toggleOutfitItem(idx, packItem.item_id)}
+                                            onClick={() =>
+                                              toggleOutfitItem(
+                                                idx,
+                                                packItem.item_id
+                                              )
+                                            }
                                           >
                                             <ClothingIcon
-                                              iconId={item.icon_id}
+                                              iconId={getEffectiveIconId(
+                                                item.icon_id,
+                                                item.category
+                                              )}
                                               className="w-3 h-3"
                                               color={item.color_code}
                                             />
-                                            <span className="capitalize">{item.type}</span>
+                                            <span className="capitalize">
+                                              {item.type}
+                                            </span>
                                             <Check className="w-3 h-3 ml-1 opacity-50" />
                                           </Badge>
                                         );
                                       })}
-                                    {packingList.filter((p) => !outfit.items.includes(p.item_id)).length === 0 && (
+                                    {packingList.filter(
+                                      (p) => !outfit.items.includes(p.item_id)
+                                    ).length === 0 && (
                                       <span className="text-xs text-muted-foreground">
                                         All packed items are in this outfit
                                       </span>

@@ -242,9 +242,11 @@ You must return ONLY a valid JSON object. Do not include any conversational text
                 "versatility": "Select neutral colors that pair well together, with a few statement pieces and accent colors",
                 "layering": "Include layers for temperature changes",
                 "practicality": "Consider comfort for planned activities",
+                "packing_efficiency": "Choose items that can serve multiple purposes and minimize bulky items, especially shoes and outerwear",
                 "formality": "Ensure appropriate items for each occasion type",
                 "weather_appropriate": "Match clothing to typical weather conditions",
-                "base_items": "Make sure to include layering essentials like a white/black t-shirt etc."
+                "base_items": "Make sure to include layering essentials like a white/black t-shirt etc.",
+                "bulky_items": "Limit many bulky items like heavy jackets and multiple pairs of shoes. The longer the trip, the more you can justify one or two additional items of this type."
             },
             "response_schema": {
                 "destination_summary": {

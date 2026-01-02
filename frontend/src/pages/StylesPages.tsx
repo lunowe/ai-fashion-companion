@@ -331,7 +331,7 @@ export default function StylesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Find a style..."
-              className="w-full py-2 pl-10 pr-4 text-sm border rounded-full border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full py-2 pl-10 pr-4 text-sm border rounded-lg border-border bg-muted/70 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
         </div>

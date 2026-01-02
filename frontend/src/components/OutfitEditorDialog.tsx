@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, X, Check, Search } from "lucide-react";
 import { ClothingIcon } from "@/lib/icons";
+import { useEffectiveIconId } from "@/hooks/useCatalogData";
 import { cn } from "@/lib/utils"; // Assuming you have a cn utility
 
 type EditorMode = "create" | "edit";
@@ -57,6 +58,7 @@ export function OutfitEditorDialog({
   isSaving,
 }: OutfitEditorDialogProps) {
   const mode: EditorMode = outfit ? "edit" : "create";
+  const getEffectiveIconId = useEffectiveIconId();
 
   // Form state
   const [name, setName] = useState("");
@@ -246,7 +248,10 @@ export function OutfitEditorDialog({
                         onClick={() => toggleItem(id)}
                       >
                         <ClothingIcon
-                          iconId={item.icon_id}
+                          iconId={getEffectiveIconId(
+                            item.icon_id,
+                            item.category
+                          )}
                           className="w-3 h-3"
                           color={item.color_code}
                         />
@@ -314,7 +319,10 @@ export function OutfitEditorDialog({
 
                                   <div className="flex-1 flex items-center justify-center w-full">
                                     <ClothingIcon
-                                      iconId={item.icon_id}
+                                      iconId={getEffectiveIconId(
+                                        item.icon_id,
+                                        item.category
+                                      )}
                                       color={item.color_code}
                                       className="w-18 h-18 drop-shadow-sm transition-transform group-hover:scale-110"
                                     />

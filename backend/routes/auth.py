@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
@@ -161,14 +162,38 @@ async def read_users_me(
         raise HTTPException(status_code=404, detail="User not found")
     
     return user_doc_to_response(user)
+
+
+@router.get("/users/me/resources")
+async def get_user_resources(
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    resource: Optional[str] = None
+):
+    """Get current resource counts for the user."""
+    user = await request.app.mongodb["users"].find_one({"username": current_user.username})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_id = str(user["_id"])
+    
+    # Count resources
+    if resource:
+        if resource == "wardrobe_size":
+            count = await request.app.mongodb["clothing"].count_documents({"user_id": user_id})
+        elif resource == "saved_outfits":
+            count = await request.app.mongodb["outfits"].count_documents({"user_id": user_id})
+        elif resource == "custom_styles":
+            count = await request.app.mongodb["styles"].count_documents({"user_id": user_id})
+        else:
+            raise HTTPException(status_code=400, detail="Invalid resource type")
         
-    return UserResponse(
-        id=str(user["_id"]),
-        username=user["username"],
-        email=user["email"],
-        created_at=user["created_at"],
-        role=user.get("role", "free"),
-        generation_count=user.get("generation_count", 0),
-        last_reset_date=user.get("last_reset_date", datetime.now()),
-        api_key=user.get("api_key")
-    )
+        return {resource: count}
+    wardrobe_count = await request.app.mongodb["clothing"].count_documents({"user_id": user_id})
+    outfits_count = await request.app.mongodb["outfits"].count_documents({"user_id": user_id})
+    styles_count = await request.app.mongodb["styles"].count_documents({"user_id": user_id})
+    return {
+        "wardrobe_size": wardrobe_count,
+        "saved_outfits": outfits_count,
+        "custom_styles": styles_count,
+    }

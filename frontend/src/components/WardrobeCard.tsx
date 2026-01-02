@@ -14,13 +14,13 @@ import {
 } from "@/components/ui/drawer";
 import { Edit, Trash2 } from "lucide-react";
 import { ClothingIcon } from "@/lib/icons";
+import { useEffectiveIconId } from "@/hooks/useCatalogData";
 
 interface WardrobeCardProps {
   item: ClothingItem;
   onEdit: (item: ClothingItem) => void;
   onDelete: (id: string) => void;
   getColorHex: (color: string) => string;
-  getCategoryIconId?: (category: string) => string | undefined;
 }
 
 export const WardrobeCard = ({
@@ -28,13 +28,13 @@ export const WardrobeCard = ({
   onEdit,
   onDelete,
   getColorHex,
-  getCategoryIconId,
 }: WardrobeCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const getEffectiveIconId = useEffectiveIconId();
 
   const colorHex = item.color_code || getColorHex(item.color);
   // Use item's icon_id, or fall back to category's icon_id
-  const effectiveIconId = item.icon_id || getCategoryIconId?.(item.category);
+  const effectiveIconId = getEffectiveIconId(item.icon_id, item.category);
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>

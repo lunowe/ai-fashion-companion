@@ -14,7 +14,7 @@ from database import get_database
 from services.outfit_generator import OutfitGenerator
 from services.outfit_visualizer import OutfitVisualizer
 from utils.s3_service import s3_service
-from services.usage_limiter import require_outfit_gen, require_visualization
+from services.usage_limiter import require_outfit_gen, require_visualization, saved_outfits_limiter
 
 import uuid
 
@@ -166,6 +166,9 @@ async def save_outfit(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     user_id = current_user.id
+    
+    # Check saved outfits limit
+    await saved_outfits_limiter.check_limit(current_user, db)
     
     print(outfit)
     outfit_data = jsonable_encoder(outfit)

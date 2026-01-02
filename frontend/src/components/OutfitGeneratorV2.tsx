@@ -49,7 +49,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import GenerationHistory from "@/components/GenerationHistory";
-import { useColors, useCategories } from "@/hooks/useCatalogData";
+import { useColors, useEffectiveIconId } from "@/hooks/useCatalogData";
 import { ClothingIcon } from "@/lib/icons";
 
 // --- Configuration ---
@@ -146,7 +146,8 @@ export default function OutfitGeneratorV2({
     );
   }, [wardrobe, itemSearch]);
 
-  const { data: colors = [], isLoading: colorsLoading } = useColors();
+  const { data: colors = [] } = useColors();
+  const getEffectiveIconId = useEffectiveIconId();
   const getColorHex = (colorOrSlug: string): string => {
     if (!colorOrSlug) return "#CCCCCC";
     const lower = colorOrSlug.toLowerCase();
@@ -516,7 +517,10 @@ export default function OutfitGeneratorV2({
                                 {getCategoryIcon(item.category)}
                               </span> */}
                               <ClothingIcon
-                                iconId={item.icon_id}
+                                iconId={getEffectiveIconId(
+                                  item.icon_id,
+                                  item.category
+                                )}
                                 color={
                                   item.color_code || getColorHex(item.color)
                                 }

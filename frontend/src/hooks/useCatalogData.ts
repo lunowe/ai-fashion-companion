@@ -17,6 +17,7 @@ import {
   type Category,
   type CategoryCreate,
 } from "@/services/categories";
+import { AVAILABLE_ICONS } from "@/lib/icons";
 
 export function useColors() {
   return useQuery({
@@ -103,7 +104,13 @@ export function useCategoryIconMap() {
 export function useEffectiveIconId() {
   const getCategoryIcon = useCategoryIconMap();
 
-  return (itemIconId: string | undefined, category: string | undefined): string | undefined => {
-    return itemIconId || getCategoryIcon(category);
+  return (
+    itemIconId: string | undefined,
+    category: string | undefined
+  ): string | undefined => {
+    if (itemIconId && AVAILABLE_ICONS.includes(itemIconId)) {
+      return itemIconId;
+    }
+    return getCategoryIcon(category);
   };
 }

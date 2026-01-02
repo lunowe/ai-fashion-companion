@@ -6,10 +6,13 @@ import {
   Sparkles,
   Luggage,
   Image,
+  Shirt,
+  Bookmark,
+  Palette,
 } from "lucide-react";
 import { api, toErrorMessage } from "../lib/api";
-import type { User, FeatureType } from "@/types";
-import { FEATURE_LIMITS } from "@/types";
+import type { User, FeatureType, ResourceType } from "@/types";
+import { FEATURE_LIMITS, RESOURCE_LIMITS } from "@/types";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -37,8 +40,22 @@ const FEATURE_INFO: Record<
   visualization: { label: "Outfit Visualization", icon: Image },
 };
 
+const RESOURCE_INFO: Record<
+  ResourceType,
+  { label: string; icon: typeof Shirt }
+> = {
+  wardrobe_size: { label: "Wardrobe Items", icon: Shirt },
+  saved_outfits: { label: "Saved Outfits", icon: Bookmark },
+  custom_styles: { label: "Custom Styles", icon: Palette },
+};
+
+type ResourceCounts = Record<ResourceType, number>;
+
 export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
+  const [resourceCounts, setResourceCounts] = useState<ResourceCounts | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -47,6 +64,7 @@ export default function Settings() {
 
   useEffect(() => {
     fetchUser();
+    fetchResources();
   }, []);
 
   const fetchUser = async () => {
@@ -60,6 +78,15 @@ export default function Settings() {
       setError(toErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchResources = async () => {
+    try {
+      const res = await api.get("/api/auth/users/me/resources");
+      setResourceCounts(res.data);
+    } catch (err) {
+      console.error("Failed to fetch resources:", err);
     }
   };
 
@@ -214,6 +241,48 @@ export default function Settings() {
         </CardContent>
       </Card>
 
+      {/* Resource Limits Section */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Resource Limits</CardTitle>
+          <CardDescription>Your account storage capacity.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {(Object.keys(RESOURCE_INFO) as ResourceType[]).map((resource) => {
+              const { label, icon: Icon } = RESOURCE_INFO[resource];
+              const limit = RESOURCE_LIMITS[resource][user.role] ?? 0;
+              const count = resourceCounts?.[resource] ?? 0;
+              const usagePercent =
+                limit === Infinity || limit === 0
+                  ? 0
+                  : Math.min(100, (count / limit) * 100);
+
+              return (
+                <div key={resource} className="space-y-2">
+                  <div className="flex justify-between items-center text-sm font-medium">
+                    <span className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      {label}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {resourceCounts ? (
+                        `${count} / ${formatLimit(limit)}`
+                      ) : (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
+                    </span>
+                  </div>
+                  {limit !== Infinity && (
+                    <Progress value={usagePercent} className="h-2" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Plan Section */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-6 px-1">Subscription Plan</h2>
@@ -224,7 +293,9 @@ export default function Settings() {
             features={[
               "5 outfit generations / day",
               "3 visualizations / day",
-              "Basic features",
+              "75 wardrobe items",
+              "15 saved outfits",
+              "1 custom style",
             ]}
             currentRole={user.role}
             cardRole="free"
@@ -237,7 +308,10 @@ export default function Settings() {
             features={[
               "50 outfit generations / day",
               "10 suitcase generations / day",
-              "25 visualizations / day",
+              "15 visualizations / day",
+              "250 wardrobe items",
+              "Unlimited saved outfits",
+              "10 custom styles",
             ]}
             currentRole={user.role}
             cardRole="premium"
@@ -249,7 +323,7 @@ export default function Settings() {
             price="$5"
             features={[
               "Unlimited generations",
-              "All features included",
+              "Unlimited storage",
               "Use your own API key",
             ]}
             currentRole={user.role}

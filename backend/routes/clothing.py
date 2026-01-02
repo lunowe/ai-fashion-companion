@@ -9,6 +9,7 @@ from models.user import UserResponse
 from models.clothing import ClothingItem, ClothingCreate, ClothingUpdate
 from database import get_database
 from bson import ObjectId
+from services.usage_limiter import wardrobe_limiter
 
 router = APIRouter()
 
@@ -20,6 +21,9 @@ async def create_clothing_item(
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     user_id = current_user.id
+    
+    # Check wardrobe size limit
+    await wardrobe_limiter.check_limit(current_user, db)
     
     clothing_data = jsonable_encoder(clothing)
     clothing_data["user_id"] = user_id

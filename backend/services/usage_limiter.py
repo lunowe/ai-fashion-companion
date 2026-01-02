@@ -11,21 +11,31 @@ from utils.auth import get_current_user
 
 
 class FeatureType(str, Enum):
+    """Daily usage features (reset daily)"""
     OUTFIT_GEN = "outfit_generation"
     SUITCASE_GEN = "suitcase_generation"
     VISUALIZATION = "visualization"
+
+
+class ResourceType(str, Enum):
+    """Resource limits (total counts, not daily)"""
     WARDROBE_SIZE = "wardrobe_size"
     SAVED_OUTFITS = "saved_outfits"
     CUSTOM_STYLES = "custom_styles"
 
 
+# Daily limits (reset each day)
 FEATURE_LIMITS = {
     FeatureType.OUTFIT_GEN: {"free": 5, "premium": 50, "byok": float("inf")},
     FeatureType.SUITCASE_GEN: {"free": 0, "premium": 10, "byok": float("inf")},
     FeatureType.VISUALIZATION: {"free": 3, "premium": 15, "byok": float("inf")},
-    FeatureType.WARDROBE_SIZE: {"free": 75, "premium": 250, "byok": float("inf")},
-    FeatureType.SAVED_OUTFITS: {"free": 15, "premium": float("inf"), "byok": float("inf")},
-    FeatureType.CUSTOM_STYLES: {"free": 1, "premium": 10, "byok": float("inf")},
+}
+
+# Resource limits (total counts)
+RESOURCE_LIMITS = {
+    ResourceType.WARDROBE_SIZE: {"free": 75, "premium": 250, "byok": float("inf")},
+    ResourceType.SAVED_OUTFITS: {"free": 15, "premium": float("inf"), "byok": float("inf")},
+    ResourceType.CUSTOM_STYLES: {"free": 1, "premium": 10, "byok": float("inf")},
 }
 
 
@@ -75,7 +85,54 @@ class UsageLimiter:
         )
 
 
-# Pre-built dependencies
+class ResourceLimiter:
+    """
+    Checks resource limits based on total counts in the database.
+    Unlike UsageLimiter, these don't reset daily.
+    """
+    def __init__(self, resource: ResourceType, collection: str, count_field: str = "user_id"):
+        self.resource = resource
+        self.collection = collection
+        self.count_field = count_field
+
+    async def check_limit(
+        self,
+        current_user: UserResponse,
+        db: AsyncIOMotorDatabase,
+    ) -> tuple[int, int]:
+        """
+        Check if user is within their resource limit.
+        Returns (current_count, limit) tuple.
+        Raises HTTPException if limit reached.
+        """
+        user_id = current_user.id
+        limit = RESOURCE_LIMITS.get(self.resource, {}).get(current_user.role, 0)
+        
+        # Count existing resources for this user
+        current_count = await db[self.collection].count_documents({self.count_field: user_id})
+        
+        if limit != float("inf") and current_count >= limit:
+            raise HTTPException(
+                403,
+                f"Resource limit reached for {self.resource.value}. "
+                f"You have {current_count}/{int(limit)} items. "
+                f"Upgrade your plan for more capacity."
+            )
+        
+        return current_count, limit
+
+    def get_limit(self, role: str) -> int:
+        """Get the limit for a specific role."""
+        return RESOURCE_LIMITS.get(self.resource, {}).get(role, 0)
+
+
+# Pre-built daily usage dependencies
 require_outfit_gen = UsageLimiter(FeatureType.OUTFIT_GEN)
 require_suitcase_gen = UsageLimiter(FeatureType.SUITCASE_GEN)
+require_visualization = UsageLimiter(FeatureType.VISUALIZATION)
+
+# Pre-built resource limiters
+wardrobe_limiter = ResourceLimiter(ResourceType.WARDROBE_SIZE, "clothing")
+saved_outfits_limiter = ResourceLimiter(ResourceType.SAVED_OUTFITS, "outfits")
+custom_styles_limiter = ResourceLimiter(ResourceType.CUSTOM_STYLES, "styles")
 require_visualization = UsageLimiter(FeatureType.VISUALIZATION)

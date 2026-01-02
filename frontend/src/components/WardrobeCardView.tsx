@@ -51,15 +51,6 @@ export default function WardrobeCardView({
     return "#CCCCCC";
   };
 
-  // Get category icon_id for a given category slug
-  const getCategoryIconId = (
-    categorySlug: string | undefined
-  ): string | undefined => {
-    if (!categorySlug) return undefined;
-    const cat = categories.find((c) => c.slug === categorySlug.toLowerCase());
-    return cat?.icon_id;
-  };
-
   // Filter and search logic
   const filteredItems = useMemo(() => {
     if (!items) return [];
@@ -263,7 +254,6 @@ export default function WardrobeCardView({
               onEdit={onEdit}
               onDelete={onDelete}
               getColorHex={getColorHex}
-              getCategoryIconId={getCategoryIconId}
             />
           ))}
         </div>

@@ -10,12 +10,23 @@ export type FeatureType =
   | "suitcase_generation"
   | "visualization";
 
-export type FeatureLimits = Record<FeatureType, Record<string, number>>;
+export type ResourceType = "wardrobe_size" | "saved_outfits" | "custom_styles";
 
+export type FeatureLimits = Record<FeatureType, Record<string, number>>;
+export type ResourceLimits = Record<ResourceType, Record<string, number>>;
+
+// Daily limits (reset each day)
 export const FEATURE_LIMITS: FeatureLimits = {
-  outfit_generation: { free: 5, premium: 20, byok: Infinity },
+  outfit_generation: { free: 5, premium: 50, byok: Infinity },
   suitcase_generation: { free: 0, premium: 10, byok: Infinity },
-  visualization: { free: 3, premium: 25, byok: Infinity },
+  visualization: { free: 3, premium: 15, byok: Infinity },
+};
+
+// Resource limits (total counts)
+export const RESOURCE_LIMITS: ResourceLimits = {
+  wardrobe_size: { free: 75, premium: 250, byok: Infinity },
+  saved_outfits: { free: 15, premium: Infinity, byok: Infinity },
+  custom_styles: { free: 1, premium: 10, byok: Infinity },
 };
 
 export type User = {

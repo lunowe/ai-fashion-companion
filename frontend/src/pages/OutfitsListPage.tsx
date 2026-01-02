@@ -42,6 +42,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ClothingIcon } from "@/lib/icons";
+import { useEffectiveIconId } from "@/hooks/useCatalogData";
 
 import { OutfitEditorDialog } from "@/components/OutfitEditorDialog";
 
@@ -63,6 +64,7 @@ function OutfitDetailContent({
   onEdit: (outfit: Outfit) => void; // Added type definition
   onClose: () => void;
 }) {
+  const getEffectiveIconId = useEffectiveIconId();
   const { status, url, trigger } = useVisualization(
     outfit._id,
     outfit.visualization_status ||
@@ -102,7 +104,7 @@ function OutfitDetailContent({
                     className="aspect-square bg-background rounded-xl border shadow-sm flex flex-col items-center justify-center p-3 transition-colors hover:border-primary/30"
                   >
                     <ClothingIcon
-                      iconId={item.icon_id}
+                      iconId={getEffectiveIconId(item.icon_id, item.category)}
                       color={item.color_code}
                       className="w-12 h-12 md:w-16 md:h-16 mb-2"
                     />
@@ -255,7 +257,10 @@ function OutfitDetailContent({
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-background rounded-md flex items-center justify-center border shadow-sm group-hover:scale-105 transition-transform">
                         <ClothingIcon
-                          iconId={item.icon_id}
+                          iconId={getEffectiveIconId(
+                            item.icon_id,
+                            item.category
+                          )}
                           color={item.color}
                           className="w-6 h-6"
                         />
@@ -327,6 +332,7 @@ function OutfitDetailContent({
 // Sub-Component: Mini Outfit Grid (The Visual Hero)
 // ------------------------------------------------------------------
 const MiniOutfitPreview = ({ items }: { items: ClothingItem[] }) => {
+  const getEffectiveIconId = useEffectiveIconId();
   const previewItems = items.slice(0, 4);
   const emptySlots = 4 - previewItems.length;
 
@@ -338,7 +344,7 @@ const MiniOutfitPreview = ({ items }: { items: ClothingItem[] }) => {
           className="bg-background rounded-md flex items-center justify-center p-2 relative overflow-hidden border border-border/20"
         >
           <ClothingIcon
-            iconId={item.icon_id}
+            iconId={getEffectiveIconId(item.icon_id, item.category)}
             color={item.color_code}
             className="w-full h-full opacity-90"
             size="md"

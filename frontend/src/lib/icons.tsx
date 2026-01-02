@@ -112,7 +112,7 @@ export function ClothingIcon({
     return (
       <div className={containerClasses}>
         <Icon
-          className="w-full h-full dark:drop-shadow-[0_0_18px_rgba(255,255,255,0.15)]"
+          className="w-full h-full"
           style={mergedStyle}
           preserveAspectRatio="xMidYMid meet"
           {...props}
