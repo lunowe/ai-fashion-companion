@@ -78,7 +78,7 @@ function Navigation() {
     >
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12 h-20 flex items-center justify-between">
         <a href="#" className="flex items-center gap-3 group">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#D4A574] to-[#B8956A] flex items-center justify-center transition-transform group-hover:scale-105">
+          <div className="h-10 w-10 rounded-full bg-linear-to-br from-[#D4A574] to-[#B8956A] flex items-center justify-center transition-transform group-hover:scale-105">
             <span className="text-[#0a0a0a] font-serif font-bold text-lg">
               F
             </span>

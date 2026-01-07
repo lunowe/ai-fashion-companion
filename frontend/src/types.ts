@@ -191,3 +191,39 @@ export type TravelSuitcaseCreate = Omit<
 >;
 
 export type TravelSuitcaseUpdate = Partial<TravelSuitcaseCreate>;
+
+// Subscription & Billing Types
+export type BillingInterval = "monthly" | "yearly";
+
+export type SubscriptionStatus =
+  | "active"
+  | "canceled"
+  | "past_due"
+  | "trialing"
+  | "none";
+
+export type Subscription = {
+  plan: string; // 'free' | 'premium' | 'byok'
+  status: SubscriptionStatus;
+  billing_interval?: BillingInterval;
+  current_period_start?: string;
+  current_period_end?: string;
+  cancel_at_period_end?: boolean;
+  stripe_subscription_id?: string;
+  stripe_customer_id?: string;
+};
+
+export type PaymentHistoryItem = {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  status: "succeeded" | "pending" | "failed" | "refunded";
+  description: string;
+  invoice_url?: string;
+};
+
+export type PlanPricing = {
+  monthly: number;
+  yearly: number;
+};

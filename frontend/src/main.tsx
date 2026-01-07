@@ -13,6 +13,7 @@ import ClothingListPage from "./pages/ClothingListPage";
 import StylesPage from "./pages/StylesPages";
 import OutfitGeneratorPage from "./pages/OutfitsGeneratorPage";
 import OutfitsListPage from "./pages/OutfitsListPage";
+import UpgradePage from "./pages/UpgradePage";
 
 import CatalogManager from "./pages/admin/CatalogManager";
 
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
           { path: "styles", element: <StylesPage /> },
           { path: "outfits", element: <OutfitsListPage /> },
           { path: "generate", element: <OutfitGeneratorPage /> },
+          { path: "upgrade", element: <UpgradePage /> },
           { path: "admin/catalog", element: <CatalogManager /> },
         ],
       },

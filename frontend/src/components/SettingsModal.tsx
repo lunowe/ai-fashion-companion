@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import {
   Loader2,
   Save,
-  User,
   Settings as SettingsIcon,
   ChevronRight,
   ChevronLeft,
@@ -20,6 +20,12 @@ import {
   Sparkles,
   Luggage,
   Image,
+  Shirt,
+  Bookmark,
+  ExternalLink,
+  Calendar,
+  Receipt,
+  BarChart3,
 } from "lucide-react";
 
 import {
@@ -32,8 +38,13 @@ import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useTheme } from "@/components/theme-provider"; // Ensure this exists from Shadcn setup
 import { useAuth } from "@/context/AuthContext"; // Import Auth for mobile logout
-import type { User as UserType, FeatureType } from "@/types";
-import { FEATURE_LIMITS } from "@/types";
+import type {
+  User as UserType,
+  FeatureType,
+  ResourceType,
+  PaymentHistoryItem,
+} from "@/types";
+import { FEATURE_LIMITS, RESOURCE_LIMITS } from "@/types";
 
 // UI Components
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -52,7 +63,6 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerDescription,
 } from "@/components/ui/drawer";
 import {
   Card,
@@ -60,7 +70,6 @@ import {
   CardTitle,
   CardContent,
   CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -73,7 +82,7 @@ interface SettingsModalProps {
   defaultTab?: "profile" | "settings" | null;
 }
 
-type TabKey = "profile" | "settings" | "appearance";
+type TabKey = "profile" | "settings" | "usage" | "appearance";
 
 export function SettingsModal({
   open,
@@ -105,6 +114,8 @@ export function SettingsModal({
         return "Profile & Style";
       case "settings":
         return "Account & Billing";
+      case "usage":
+        return "Usage & Limits";
       case "appearance":
         return "Appearance";
       default:
@@ -118,6 +129,8 @@ export function SettingsModal({
         return <ProfileTabContent />;
       case "settings":
         return <SettingsTabContent />;
+      case "usage":
+        return <UsageTabContent />;
       case "appearance":
         return <AppearanceTabContent />;
       default:
@@ -166,6 +179,17 @@ export function SettingsModal({
                   <CreditCard className="w-4 h-4 text-muted-foreground" />
                   Account & Billing
                 </Button>
+                <Button
+                  variant={activeTab === "usage" ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-3",
+                    activeTab === "usage" && "bg-muted shadow-sm"
+                  )}
+                  onClick={() => setActiveTab("usage")}
+                >
+                  <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                  Usage & Limits
+                </Button>
                 {/* Note: Desktop Theme/Logout is handled in the Header Dropdown, not here, 
                     but you could add them here if you wanted a unified settings page. */}
               </nav>
@@ -182,7 +206,11 @@ export function SettingsModal({
                     <p className="text-muted-foreground">
                       {activeTab === "profile"
                         ? "Customize how the AI generates outfits for you."
-                        : "Manage your subscription and usage limits."}
+                        : activeTab === "settings"
+                        ? "Manage your subscription and billing."
+                        : activeTab === "usage"
+                        ? "Monitor your daily AI usage and resource limits."
+                        : "Customize the app appearance."}
                     </p>
                   </div>
                   <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -251,8 +279,16 @@ export function SettingsModal({
                     iconColor="text-green-600 dark:text-green-400"
                     iconBg="bg-green-100 dark:bg-green-900/30"
                     title="Account & Billing"
-                    subtitle="Usage and plans"
+                    subtitle="Subscription and payments"
                     onClick={() => setActiveTab("settings")}
+                  />
+                  <MobileMenuRow
+                    icon={<BarChart3 className="w-5 h-5" />}
+                    iconColor="text-purple-600 dark:text-purple-400"
+                    iconBg="bg-purple-100 dark:bg-purple-900/30"
+                    title="Usage & Limits"
+                    subtitle="Daily usage and storage"
+                    onClick={() => setActiveTab("usage")}
                   />
                 </div>
               </div>
@@ -584,16 +620,59 @@ const FEATURE_INFO: Record<
   visualization: { label: "Outfit Visualization", icon: Image },
 };
 
+const RESOURCE_INFO: Record<
+  ResourceType,
+  { label: string; icon: typeof Shirt }
+> = {
+  wardrobe_size: { label: "Wardrobe Items", icon: Shirt },
+  saved_outfits: { label: "Saved Outfits", icon: Bookmark },
+  custom_styles: { label: "Custom Styles", icon: Palette },
+};
+
+// Plan display info
+const PLAN_INFO: Record<
+  string,
+  { name: string; price: string; description: string }
+> = {
+  free: {
+    name: "Free",
+    price: "$0/month",
+    description: "Basic features for getting started",
+  },
+  premium: {
+    name: "Premium",
+    price: "$10/month",
+    description: "Full access with higher limits",
+  },
+  byok: {
+    name: "BYOK",
+    price: "$5/month",
+    description: "Unlimited usage with your own API key",
+  },
+};
+
+// Mock payment history for now (will come from backend later)
+const MOCK_PAYMENT_HISTORY: PaymentHistoryItem[] = [];
+
+type ResourceCounts = Record<ResourceType, number>;
+
 function SettingsTabContent() {
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>(
+    []
+  );
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(true);
 
   useEffect(() => {
     fetchUser();
+    fetchPaymentHistory();
   }, []);
 
   const fetchUser = async () => {
@@ -610,21 +689,33 @@ function SettingsTabContent() {
     }
   };
 
-  const handlePlanChange = async (newRole: string) => {
-    if (user?.role === newRole) return;
+  const fetchPaymentHistory = async () => {
     try {
-      setSaving(true);
+      setPaymentHistoryLoading(true);
+      // For now, use mock data. When Stripe is integrated, this will call the API
+      setPaymentHistory(MOCK_PAYMENT_HISTORY);
+    } catch (err) {
+      console.error("Failed to fetch payment history:", err);
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!user || user.role === "free") return;
+    try {
+      setCancelLoading(true);
       setError("");
       setSuccess("");
       const res = await api.put("/api/auth/users/me/settings", {
-        role: newRole,
+        role: "free",
       });
       setUser(res.data);
-      setSuccess(`Plan updated to ${newRole.toUpperCase()}`);
+      setSuccess("Subscription canceled. You've been moved to the Free plan.");
     } catch (err) {
       setError(toErrorMessage(err));
     } finally {
-      setSaving(false);
+      setCancelLoading(false);
     }
   };
 
@@ -649,11 +740,7 @@ function SettingsTabContent() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-[200px] w-full rounded-xl" />
-        <div className="grid md:grid-cols-3 gap-4">
-          <Skeleton className="h-[250px] rounded-xl" />
-          <Skeleton className="h-[250px] rounded-xl" />
-          <Skeleton className="h-[250px] rounded-xl" />
-        </div>
+        <Skeleton className="h-[150px] w-full rounded-xl" />
       </div>
     );
   }
@@ -664,6 +751,270 @@ function SettingsTabContent() {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>Failed to load user settings.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  const planInfo = PLAN_INFO[user.role] || PLAN_INFO.free;
+  const isFreePlan = user.role === "free";
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="border-primary/50 bg-primary/10 text-primary">
+          <Check className="h-4 w-4" />
+          <AlertTitle>Success</AlertTitle>
+          <AlertDescription>{success}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Current Subscription Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Subscription
+          </CardTitle>
+          <CardDescription>
+            Manage your subscription and billing.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Current Plan Display */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border bg-muted/30 gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">{planInfo.name}</h3>
+                  <Badge
+                    variant="secondary"
+                    className="bg-primary/20 text-primary"
+                  >
+                    Current Plan
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {planInfo.description}
+                </p>
+                <p className="text-2xl font-bold mt-2">{planInfo.price}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                {isFreePlan ? (
+                  <Button onClick={() => navigate("/upgrade")}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Upgrade Plan
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/upgrade")}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Manage Plan
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={handleCancelSubscription}
+                      disabled={cancelLoading}
+                    >
+                      {cancelLoading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Cancel Subscription
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Subscription Details (for paid plans) */}
+            {!isFreePlan && (
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    Billing Period
+                  </p>
+                  <p className="font-medium">Monthly</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    Next Billing Date
+                  </p>
+                  <p className="font-medium">Not available yet</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Payment History Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5" />
+            Payment History
+          </CardTitle>
+          <CardDescription>
+            View your past payments and invoices.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {paymentHistoryLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : paymentHistory.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No payment history yet</p>
+              <p className="text-sm">
+                Your payment history will appear here once you upgrade.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {paymentHistory.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-3 rounded-lg border"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "h-2 w-2 rounded-full",
+                        payment.status === "succeeded" && "bg-green-500",
+                        payment.status === "pending" && "bg-yellow-500",
+                        payment.status === "failed" && "bg-red-500",
+                        payment.status === "refunded" && "bg-gray-500"
+                      )}
+                    />
+                    <div>
+                      <p className="font-medium">{payment.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(payment.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold">
+                      ${(payment.amount / 100).toFixed(2)}{" "}
+                      {payment.currency.toUpperCase()}
+                    </span>
+                    {payment.invoice_url && (
+                      <Button variant="ghost" size="sm" asChild>
+                        <a
+                          href={payment.invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* API Key Section (Only for BYOK) */}
+      {user.role === "byok" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Google Gemini API Key</CardTitle>
+            <CardDescription>
+              Enter your Google Gemini API key to enable unlimited generations.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="AIzaSy..."
+                className="flex-1"
+              />
+              <Button onClick={handleApiKeySave} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Key
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// --- Usage Tab Content ---
+
+function UsageTabContent() {
+  const [user, setUser] = useState<UserType | null>(null);
+  const [resourceCounts, setResourceCounts] = useState<ResourceCounts | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchUser();
+    fetchResources();
+  }, []);
+
+  const fetchUser = async () => {
+    try {
+      const res = await api.get("/api/auth/users/me");
+      setUser(res.data);
+    } catch (err) {
+      setError(toErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchResources = async () => {
+    try {
+      const res = await api.get("/api/auth/users/me/resources");
+      setResourceCounts(res.data);
+    } catch (err) {
+      console.error("Failed to fetch resources:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-[200px] w-full rounded-xl" />
+        <Skeleton className="h-[200px] w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>Failed to load usage data.</AlertDescription>
       </Alert>
     );
   }
@@ -693,18 +1044,13 @@ function SettingsTabContent() {
         </Alert>
       )}
 
-      {success && (
-        <Alert className="border-primary/50 bg-primary/10 text-primary">
-          <Check className="h-4 w-4" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>{success}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Usage Section */}
+      {/* Daily Usage Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Usage & Limits</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Daily Usage
+          </CardTitle>
           <CardDescription>
             Monitor your daily AI feature usage.
           </CardDescription>
@@ -752,152 +1098,50 @@ function SettingsTabContent() {
         </CardContent>
       </Card>
 
-      {/* Plan Section */}
-      <div>
-        <h3 className="text-lg font-medium mb-4">Subscription Plan</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          <PlanCard
-            title="Free"
-            price="$0"
-            features={[
-              "5 outfit generations / day",
-              "3 visualizations / day",
-              "Basic features",
-            ]}
-            currentRole={user.role}
-            cardRole="free"
-            loading={saving}
-            onSelect={() => handlePlanChange("free")}
-          />
-          <PlanCard
-            title="Premium"
-            price="$10"
-            features={[
-              "50 outfit generations / day",
-              "10 suitcase generations / day",
-              "25 visualizations / day",
-            ]}
-            currentRole={user.role}
-            cardRole="premium"
-            loading={saving}
-            onSelect={() => handlePlanChange("premium")}
-          />
-          <PlanCard
-            title="BYOK"
-            price="$5"
-            features={[
-              "Unlimited generations",
-              "All features included",
-              "Use your own API key",
-            ]}
-            currentRole={user.role}
-            cardRole="byok"
-            loading={saving}
-            onSelect={() => handlePlanChange("byok")}
-          />
-        </div>
-      </div>
+      {/* Resource Limits Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shirt className="h-5 w-5" />
+            Resource Limits
+          </CardTitle>
+          <CardDescription>Your account storage capacity.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {(Object.keys(RESOURCE_INFO) as ResourceType[]).map((resource) => {
+              const { label, icon: Icon } = RESOURCE_INFO[resource];
+              const limit = RESOURCE_LIMITS[resource][user.role] ?? 0;
+              const count = resourceCounts?.[resource] ?? 0;
+              const usagePercent =
+                limit === Infinity || limit === 0
+                  ? 0
+                  : Math.min(100, (count / limit) * 100);
 
-      {/* API Key Section (Only for BYOK) */}
-      {user.role === "byok" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Google Gemini API Key</CardTitle>
-            <CardDescription>
-              Enter your Google Gemini API key to enable unlimited generations.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="flex-1"
-              />
-              <Button onClick={handleApiKeySave} disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Key
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              return (
+                <div key={resource} className="space-y-2">
+                  <div className="flex justify-between items-center text-sm font-medium">
+                    <span className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      {label}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {resourceCounts ? (
+                        `${count} / ${formatLimit(limit)}`
+                      ) : (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
+                    </span>
+                  </div>
+                  {limit !== Infinity && (
+                    <Progress value={usagePercent} className="h-2" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
-}
-
-function PlanCard({
-  title,
-  price,
-  features,
-  currentRole,
-  cardRole,
-  loading,
-  onSelect,
-}: {
-  title: string;
-  price: string;
-  features: string[];
-  currentRole: string;
-  cardRole: string;
-  loading: boolean;
-  onSelect: () => void;
-}) {
-  const isCurrent = currentRole === cardRole;
-
-  return (
-    <Card
-      className={cn(
-        "relative cursor-pointer transition-all hover:shadow-md",
-        isCurrent
-          ? "border-primary ring-1 ring-primary bg-primary/5"
-          : "hover:border-primary/50"
-      )}
-      onClick={!isCurrent ? onSelect : undefined}
-    >
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{title}</CardTitle>
-          {isCurrent && (
-            <Badge
-              variant="secondary"
-              className="bg-primary/20 text-primary hover:bg-primary/20"
-            >
-              Current
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-bold mb-3">
-          {price}
-          <span className="text-sm font-normal text-muted-foreground">/mo</span>
-        </div>
-        <ul className="space-y-1.5">
-          {features.map((feature, i) => (
-            <li
-              key={i}
-              className="text-sm text-muted-foreground flex items-center gap-2"
-            >
-              <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-              {feature}
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-      {!isCurrent && (
-        <CardFooter>
-          <Button className="w-full" variant="outline" disabled={loading}>
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Select Plan"
-            )}
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
   );
 }
