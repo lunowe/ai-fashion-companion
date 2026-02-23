@@ -79,9 +79,10 @@ class OutfitGenerator:
             
             llm = OpenRouter(
                 api_key=api_key,
-                max_tokens=30000,
-                context_window=128000,
-                model="x-ai/grok-4.1-fast",
+                max_tokens=128000,
+                context_window=200000,
+                model="anthropic/claude-sonnet-4.6",
+                reasoning={"enabled": True}
             )
 
             blocks = []

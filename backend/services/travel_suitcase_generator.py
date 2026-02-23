@@ -69,12 +69,19 @@ class TravelSuitcaseGenerator:
             # Use user's API key if provided (BYOK), otherwise use system key
             key = api_key if api_key else settings.OPENROUTER_API_KEY
 
+            # llm = OpenRouter(
+            #     api_key=key,
+            #     max_tokens=64000,
+            #     context_window=128000,
+            #     model="openai/gpt-5.2",
+            #     reasoning={"reasoning_effort": "medium"}
+            # )
             llm = OpenRouter(
-                api_key=key,
-                max_tokens=64000,
-                context_window=128000,
-                model="openai/gpt-5.2",
-                reasoning={"reasoning_effort": "medium"}
+                api_key=api_key,
+                max_tokens=128000,
+                context_window=200000,
+                model="anthropic/claude-sonnet-4.6",
+                reasoning={"enabled": True}
             )
 
             message = ChatMessage(role="user", blocks=[TextBlock(text=prompt)])
