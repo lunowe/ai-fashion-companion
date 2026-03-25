@@ -33,6 +33,7 @@ class SuitcaseGenRequest(BaseModel):
     end_date: datetime
     occasions: List[str]
     style_ids: List[str] = []  # 1-3 style IDs for variety
+    model: Optional[str] = None  # OpenRouter model ID
 
 
 class SuitcaseGenResponse(BaseModel):
@@ -117,7 +118,8 @@ async def generate_suitcase(
             styles=styles,
             saved_outfits=saved_outfits,
             user_preferences=user_preferences,
-            api_key=current_user.api_key if current_user.role == "byok" else None
+            api_key=current_user.api_key if current_user.role == "byok" else None,
+            model=suitcase_request.model
         )
 
         # Increment generation count

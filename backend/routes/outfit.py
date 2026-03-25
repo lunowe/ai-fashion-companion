@@ -98,7 +98,8 @@ async def generate_outfits(
             description=outfit_request.description,
             user_preferences=user_preferences,
             num_outfits=outfit_request.num_outfits,
-            api_key=current_user.api_key if user_role == "byok" else None
+            api_key=current_user.api_key if user_role == "byok" else None,
+            model=outfit_request.model
         )
         
         if not generated_outfits:

@@ -50,6 +50,7 @@ class OutfitGenRequest(BaseModel):
     required_items: List[str] = []  # IDs of 0-2 required clothing items
     exclude_items: List[str] = []   # IDs of items to exclude
     num_outfits: int = 3
+    model: Optional[str] = None  # OpenRouter model ID
 
     class Config:
         json_schema_extra = {
@@ -59,7 +60,8 @@ class OutfitGenRequest(BaseModel):
                 "weather": "mild",
                 "description": "Something with a vintage vibe",
                 "required_items": ["60d21b4967d0d8992e610c86"],
-                "num_outfits": 3
+                "num_outfits": 3,
+                "model": "anthropic/claude-sonnet-4.6"
             }
         }
 

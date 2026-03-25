@@ -16,6 +16,7 @@ import {
   Crown,
   History,
   Pencil,
+  Bot,
 } from "lucide-react";
 
 import type {
@@ -28,12 +29,20 @@ import type {
   TravelSuitcaseUpdate,
   OutfitCreate,
 } from "@/types";
+import { LLM_MODELS } from "@/types";
 import { SuitcaseEditorDialog } from "@/components/SuitcaseEditorDialog";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -132,6 +141,7 @@ export default function TravelWizard({
   const [endDate, setEndDate] = useState("");
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState(LLM_MODELS[0].id);
 
   // Results
   const [suitcaseResult, setSuitcaseResult] =
@@ -225,6 +235,7 @@ export default function TravelWizard({
         end_date: new Date(endDate).toISOString(),
         occasions: getOccasionLabels(),
         style_ids: selectedStyles,
+        model: selectedModel,
       };
 
       const res = await onGenerate(request);
@@ -963,6 +974,37 @@ export default function TravelWizard({
                       )}
                     </section>
                   )}
+
+                  {/* AI Model Selection */}
+                  <section className="space-y-3">
+                    <Label className="text-xs font-medium flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      AI Model
+                    </Label>
+                    <Select
+                      value={selectedModel}
+                      onValueChange={setSelectedModel}
+                      disabled={!isPro}
+                    >
+                      <SelectTrigger className="h-[42px] text-sm">
+                        <SelectValue placeholder="Select Model..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LLM_MODELS.map((m) => (
+                          <SelectItem
+                            key={m.id}
+                            value={m.id}
+                            className="cursor-pointer"
+                          >
+                            <span>{m.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {m.provider}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </section>
                 </motion.div>
               )}
 

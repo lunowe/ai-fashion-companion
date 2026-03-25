@@ -90,6 +90,7 @@ export type OutfitGenRequest = {
   required_items: string[];
   exclude_items?: string[];
   num_outfits: number;
+  model?: string;
 };
 
 /** Unklare Struktur serverseitiger Generierung robust behandeln */
@@ -138,6 +139,7 @@ export type SuitcaseGenRequest = {
   end_date: string; // ISO date string
   occasions: string[];
   style_ids?: string[]; // 1-3 style IDs for variety
+  model?: string;
 };
 
 export type PackingItem = {
@@ -227,3 +229,19 @@ export type PlanPricing = {
   monthly: number;
   yearly: number;
 };
+
+// LLM Model Selection
+export type LLMModel = {
+  id: string;
+  name: string;
+  provider: string;
+};
+
+export const LLM_MODELS: LLMModel[] = [
+  { id: "anthropic/claude-sonnet-4.6", name: "Claude Sonnet 4.6", provider: "Anthropic" },
+  { id: "moonshotai/kimi-k2", name: "Kimi K2", provider: "Moonshot" },
+  { id: "moonshotai/kimi-k2.5", name: "Kimi K2.5", provider: "Moonshot" },
+  { id: "google/gemini-3.1-flash", name: "Gemini 3.1 Flash", provider: "Google" },
+  { id: "openai/gpt-5.4", name: "GPT-5.4", provider: "OpenAI" },
+  { id: "x-ai/grok-4.20-beta", name: "Grok 4.20 Beta", provider: "xAI" },
+];

@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Clock,
   ChevronDown,
+  Bot,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type {
@@ -20,6 +21,7 @@ import type {
   OutfitCreate,
   HistoryEntry,
 } from "@/types";
+import { LLM_MODELS } from "@/types";
 import { resolveItemObjects, normalizeGenerated } from "@/lib/outfit-utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -125,6 +127,7 @@ export default function OutfitGeneratorV2({
   const [customWeather, setCustomWeather] = useState("");
   const [selectedItems, setSelectedItems] = useState<ClothingItem[]>([]);
   const [numOutfits, setNumOutfits] = useState(3);
+  const [selectedModel, setSelectedModel] = useState(LLM_MODELS[0].id);
   const [itemSearch, setItemSearch] = useState("");
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
@@ -204,6 +207,7 @@ export default function OutfitGeneratorV2({
         description: freeText,
         required_items: selectedItems.map((item) => item._id),
         num_outfits: numOutfits,
+        model: selectedModel,
       });
       setGeneratedOutfits(res.map(normalizeGenerated));
       setStep(3);
@@ -349,6 +353,34 @@ export default function OutfitGeneratorV2({
                         {numOutfits}
                       </span>
                     </div>
+                  </div>
+                  <div className="pt-4">
+                    <Label className="flex items-center gap-2 mb-2 text-sm text-foreground">
+                      <Bot className="w-4 h-4" />
+                      AI Model
+                    </Label>
+                    <Select
+                      value={selectedModel}
+                      onValueChange={setSelectedModel}
+                    >
+                      <SelectTrigger className="h-[42px] bg-muted w-full">
+                        <SelectValue placeholder="Select Model..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LLM_MODELS.map((m) => (
+                          <SelectItem
+                            key={m.id}
+                            value={m.id}
+                            className="cursor-pointer"
+                          >
+                            <span>{m.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {m.provider}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

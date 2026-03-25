@@ -14,6 +14,43 @@ import traceback
 import tempfile
 from utils.s3_service import s3_service
 
+DEFAULT_MODEL = "anthropic/claude-sonnet-4.6"
+
+# Per-model configurations for OpenRouter
+MODEL_CONFIGS = {
+    "anthropic/claude-sonnet-4.6": {
+        "max_tokens": 128000,
+        "context_window": 200000,
+        "reasoning": {"enabled": True},
+    },
+    "moonshotai/kimi-k2": {
+        "max_tokens": 64000,
+        "context_window": 128000,
+        "reasoning": None,
+    },
+    "moonshotai/kimi-k2.5": {
+        "max_tokens": 64000,
+        "context_window": 128000,
+        "reasoning": None,
+    },
+    "google/gemini-3.1-flash": {
+        "max_tokens": 64000,
+        "context_window": 1000000,
+        "reasoning": None,
+    },
+    "openai/gpt-5.4": {
+        "max_tokens": 64000,
+        "context_window": 128000,
+        "reasoning": {"reasoning_effort": "medium"},
+    },
+    "x-ai/grok-4.20-beta": {
+        "max_tokens": 64000,
+        "context_window": 128000,
+        "reasoning": None,
+    },
+}
+
+
 class OutfitGenerator:
     def __init__(self):
         openai.api_key = settings.OPENAI_API_KEY
@@ -30,7 +67,8 @@ class OutfitGenerator:
         description: str = None,
         user_preferences: Dict = None,
         num_outfits: int = 3,
-        api_key: str = None
+        api_key: str = None,
+        model: str = None
     ) -> List[Dict]:
         """
         Generate outfit combinations based on wardrobe items, style, and constraints.
@@ -76,14 +114,22 @@ class OutfitGenerator:
         try:
             # Use user's API key if provided (BYOK), otherwise use system key
             api_key = api_key if api_key else settings.OPENROUTER_API_KEY
-            
-            llm = OpenRouter(
-                api_key=api_key,
-                max_tokens=128000,
-                context_window=200000,
-                model="anthropic/claude-sonnet-4.6",
-                reasoning={"enabled": True}
-            )
+
+            # Resolve model and its config
+            selected_model = model or DEFAULT_MODEL
+            config = MODEL_CONFIGS.get(selected_model, MODEL_CONFIGS[DEFAULT_MODEL])
+
+            llm_kwargs = {
+                "api_key": api_key,
+                "max_tokens": config["max_tokens"],
+                "context_window": config["context_window"],
+                "model": selected_model,
+            }
+            if config.get("reasoning"):
+                llm_kwargs["reasoning"] = config["reasoning"]
+
+            llm = OpenRouter(**llm_kwargs)
+            print(f"Using model: {selected_model}")
 
             blocks = []
             if style.get('reference_images'):
