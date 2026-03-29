@@ -15,6 +15,7 @@ class FeatureType(str, Enum):
     OUTFIT_GEN = "outfit_generation"
     SUITCASE_GEN = "suitcase_generation"
     VISUALIZATION = "visualization"
+    ITEM_ANALYSIS = "item_analysis"
 
 
 class ResourceType(str, Enum):
@@ -29,6 +30,7 @@ FEATURE_LIMITS = {
     FeatureType.OUTFIT_GEN: {"free": 5, "premium": 50, "byok": float("inf")},
     FeatureType.SUITCASE_GEN: {"free": 0, "premium": 10, "byok": float("inf")},
     FeatureType.VISUALIZATION: {"free": 3, "premium": 15, "byok": float("inf")},
+    FeatureType.ITEM_ANALYSIS: {"free": 0, "premium": 20, "byok": float("inf")},
 }
 
 # Resource limits (total counts)
@@ -130,9 +132,9 @@ class ResourceLimiter:
 require_outfit_gen = UsageLimiter(FeatureType.OUTFIT_GEN)
 require_suitcase_gen = UsageLimiter(FeatureType.SUITCASE_GEN)
 require_visualization = UsageLimiter(FeatureType.VISUALIZATION)
+require_item_analysis = UsageLimiter(FeatureType.ITEM_ANALYSIS)
 
 # Pre-built resource limiters
 wardrobe_limiter = ResourceLimiter(ResourceType.WARDROBE_SIZE, "clothing")
 saved_outfits_limiter = ResourceLimiter(ResourceType.SAVED_OUTFITS, "outfits")
 custom_styles_limiter = ResourceLimiter(ResourceType.CUSTOM_STYLES, "styles")
-require_visualization = UsageLimiter(FeatureType.VISUALIZATION)

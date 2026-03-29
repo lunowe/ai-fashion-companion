@@ -40,9 +40,12 @@ import OutfitGeneratorV2 from "@/components/OutfitGeneratorV2";
 import TravelWizard from "@/components/TravelWizard";
 import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
-import { Sparkles, Loader2, Luggage } from "lucide-react";
+import { Sparkles, Loader2, Luggage, Camera, Lock } from "lucide-react";
+import ClosetCheckSection from "@/components/ClosetCheckSection";
+import StylePieceSection from "@/components/StylePieceSection";
+import { Separator } from "@/components/ui/separator";
 
-type GeneratorMode = "outfit" | "suitcase";
+type GeneratorMode = "outfit" | "suitcase" | "trypiece";
 
 export default function OutfitGeneratorPage() {
   const { user } = useAuth();
@@ -74,6 +77,17 @@ export default function OutfitGeneratorPage() {
     queryFn: getGenerationHistory,
     refetchOnWindowFocus: false,
   });
+
+  // Item analysis limits (premium-only)
+  const analysisLimit = user
+    ? FEATURE_LIMITS.item_analysis[user.role] ?? 0
+    : 0;
+  const analysisCount = user?.usage_counts?.item_analysis ?? 0;
+  const isAnalysisLimitReached = !!(
+    user &&
+    analysisLimit !== Infinity &&
+    analysisCount >= analysisLimit
+  );
 
   // Check if user has pro access for suitcase feature
   const isPro = user?.role === "premium" || user?.role === "byok";
@@ -226,6 +240,19 @@ export default function OutfitGeneratorPage() {
             <Luggage className="w-4 h-4" />
             Pack for Trip
           </button>
+          <button
+            type="button"
+            onClick={() => setMode("trypiece")}
+            className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              mode === "trypiece"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            Try a Piece
+            {!isPro && <Lock className="w-3 h-3 ml-0.5 opacity-60" />}
+          </button>
         </div>
       </div>
 
@@ -257,7 +284,7 @@ export default function OutfitGeneratorPage() {
           disabled={isLimitReached}
           history={history || []}
         />
-      ) : (
+      ) : mode === "suitcase" ? (
         <TravelWizard
           wardrobe={wardrobe || []}
           styles={styles || []}
@@ -270,6 +297,86 @@ export default function OutfitGeneratorPage() {
           onDeleteSuitcase={handleDeleteSuitcase}
           disabled={isLimitReached}
         />
+      ) : (
+        /* Try a Piece mode */
+        <div className="px-4 pb-4">
+          {!isPro ? (
+            /* Premium gate for free users */
+            <div className="rounded-lg border-2 border-dashed border-muted-foreground/20 p-8 text-center space-y-3">
+              <Lock className="w-10 h-10 mx-auto text-muted-foreground/40" />
+              <h3 className="font-semibold text-lg">Premium Feature</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Upload a photo of any clothing item to check if it fits your
+                wardrobe or get styling suggestions with your existing pieces.
+              </p>
+              <Link to="/upgrade">
+                <Button className="mt-2 gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Upgrade to Premium
+                </Button>
+              </Link>
+            </div>
+          ) : isAnalysisLimitReached ? (
+            /* Limit reached banner */
+            <div
+              className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 rounded shadow-sm"
+              role="alert"
+            >
+              <p className="font-bold">Daily Limit Reached</p>
+              <p>
+                You have used all {analysisLimit} item analyses for today. Come
+                back tomorrow or{" "}
+                <Link
+                  to="/settings"
+                  className="underline font-semibold hover:text-amber-900"
+                >
+                  upgrade your plan
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
+            /* Two feature sections */
+            <div className="space-y-8">
+              {/* Section 1: Closet Check */}
+              <section className="space-y-3">
+                <div>
+                  <h3 className="font-semibold text-base">
+                    Would this fit my closet?
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload a photo to see how a piece complements your wardrobe
+                  </p>
+                </div>
+                <ClosetCheckSection
+                  wardrobe={wardrobe || []}
+                  disabled={isAnalysisLimitReached}
+                />
+              </section>
+
+              <Separator />
+
+              {/* Section 2: Style This Piece */}
+              <section className="space-y-3">
+                <div>
+                  <h3 className="font-semibold text-base">
+                    Style this piece with my closet
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Upload a photo to get outfit ideas combining it with what you
+                    own
+                  </p>
+                </div>
+                <StylePieceSection
+                  wardrobe={wardrobe || []}
+                  styles={styles || []}
+                  disabled={isAnalysisLimitReached}
+                  onSave={handleSave}
+                />
+              </section>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Save Dialog */}
