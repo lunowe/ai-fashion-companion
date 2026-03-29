@@ -3,12 +3,14 @@ export type UsageCounts = {
   outfit_generation: number;
   suitcase_generation: number;
   visualization: number;
+  item_analysis: number;
 };
 
 export type FeatureType =
   | "outfit_generation"
   | "suitcase_generation"
-  | "visualization";
+  | "visualization"
+  | "item_analysis";
 
 export type ResourceType = "wardrobe_size" | "saved_outfits" | "custom_styles";
 
@@ -20,6 +22,7 @@ export const FEATURE_LIMITS: FeatureLimits = {
   outfit_generation: { free: 5, premium: 50, byok: Infinity },
   suitcase_generation: { free: 0, premium: 10, byok: Infinity },
   visualization: { free: 3, premium: 15, byok: Infinity },
+  item_analysis: { free: 0, premium: 20, byok: Infinity },
 };
 
 // Resource limits (total counts)
@@ -245,3 +248,52 @@ export const LLM_MODELS: LLMModel[] = [
   { id: "openai/gpt-5.4", name: "GPT-5.4", provider: "OpenAI" },
   { id: "x-ai/grok-4.20-beta", name: "Grok 4.20 Beta", provider: "xAI" },
 ];
+
+// ─── Item Analysis Types ────────────────────────────────────────────
+
+export type AnalyzedItem = {
+  type: string;
+  category: string;
+  color: string;
+  color_code?: string;
+  fit: string;
+  material?: string;
+  seasons?: string[];
+  formality_level?: number;
+  description: string;
+};
+
+export type ClosetCheckResult = {
+  compatibility_score: number;
+  verdict: string;
+  fills_gaps: string[];
+  redundancies: string[];
+  color_harmony: string;
+  versatility_score: number;
+  suggested_pairings: string[];
+  recommendation: { should_buy: boolean; reasoning: string };
+};
+
+export type ClosetCheckResponse = {
+  analyzed_item: AnalyzedItem;
+  closet_check: ClosetCheckResult;
+};
+
+export type StylePieceResponse = {
+  analyzed_item: AnalyzedItem;
+  outfits: GeneratedOutfit[];
+};
+
+export type ClosetCheckRequest = {
+  image_base64: string;
+  model?: string;
+};
+
+export type StylePieceRequest = {
+  image_base64: string;
+  style_id?: string;
+  occasion?: string;
+  weather?: string;
+  num_outfits: number;
+  model?: string;
+};

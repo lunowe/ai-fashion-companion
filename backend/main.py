@@ -3,7 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from contextlib import asynccontextmanager
 
 from config import settings
-from routes import clothing, style, outfit, user_profile, auth, images, catalog, colors, categories, travel_suitcase
+from routes import clothing, style, outfit, user_profile, auth, images, catalog, colors, categories, travel_suitcase, item_analysis
 from middleware.auth_refresh import TokenRefreshMiddleware
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +47,7 @@ app.include_router(catalog.router, prefix="/api/catalog", tags=["catalog"])
 app.include_router(colors.router, prefix="/api/colors", tags=["colors"])
 app.include_router(categories.router, prefix="/api/categories", tags=["categories"])
 app.include_router(travel_suitcase.router, prefix="/api/suitcases", tags=["suitcases"])
+app.include_router(item_analysis.router, prefix="/api/item-analysis", tags=["item-analysis"])
 
 @app.get("/")
 async def root():

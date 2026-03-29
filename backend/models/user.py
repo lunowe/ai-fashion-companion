@@ -8,6 +8,7 @@ class UsageCounts(BaseModel):
     outfit_generation: int = 0
     suitcase_generation: int = 0
     visualization: int = 0
+    item_analysis: int = 0
 
 
 class UserBase(BaseModel):
