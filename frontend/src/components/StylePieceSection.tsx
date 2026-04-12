@@ -7,6 +7,8 @@ import {
   Bot,
   Shirt,
   Sparkles,
+  ChevronDown,
+  RotateCcw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -33,6 +35,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Card,
   CardContent,
@@ -89,6 +96,7 @@ export default function StylePieceSection({
   const [occasion, setOccasion] = useState<string>("");
   const [weather, setWeather] = useState<string>("");
   const [numOutfits, setNumOutfits] = useState(3);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [result, setResult] = useState<StylePieceResponse | null>(null);
 
   // Loading message rotation
@@ -99,7 +107,9 @@ export default function StylePieceSection({
     mutationFn: stylePiece,
     onSuccess: (data) => {
       setResult(data);
-      toast.success(`Generated ${data.outfits.length} outfit${data.outfits.length !== 1 ? "s" : ""}!`);
+      toast.success(
+        `Generated ${data.outfits.length} outfit${data.outfits.length !== 1 ? "s" : ""}!`
+      );
     },
     onError: (error: any) => {
       const msg =
@@ -139,12 +149,11 @@ export default function StylePieceSection({
   const handleClear = () => {
     setImage(null);
     setResult(null);
+    setShowAdvanced(false);
   };
 
   const handleSaveOutfit = (outfit: GeneratedOutfit, analyzedItem: AnalyzedItem) => {
-    // Filter out NEW_ITEM from the items array since it's not in the wardrobe
     const wardrobeItemIds = outfit.items.filter((id) => id !== "NEW_ITEM");
-
     onSave({
       name: outfit.name,
       style_id: styleId || "",
@@ -163,130 +172,149 @@ export default function StylePieceSection({
         currentImage={image}
         onClear={handleClear}
         disabled={disabled || mutation.isPending}
+        compact
       />
 
-      {/* Controls */}
-      {image && !result && (
-        <div className="space-y-3">
-          {/* Row 1: Style + Model */}
-          <div className="grid grid-cols-2 gap-3">
+      {/* Controls — shown after image captured */}
+      <AnimatePresence>
+        {image && !result && !mutation.isPending && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-3 overflow-hidden"
+          >
+            {/* Quick-select chips: Occasion */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Style (optional)</Label>
-              <Select value={styleId || "none"} onValueChange={(v) => setStyleId(v === "none" ? "" : v)}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Any style" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Any style</SelectItem>
-                  {styles.map((s) => (
-                    <SelectItem key={s._id} value={s._id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs text-muted-foreground">Occasion</Label>
+              <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none -mx-1 px-1">
+                {OCCASION_PRESETS.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => setOccasion(occasion === o.id ? "" : o.id)}
+                    className={`cursor-pointer flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                      occasion === o.id
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted active:scale-95"
+                    }`}
+                  >
+                    {o.icon} {o.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Bot className="w-3 h-3" /> Model
-              </Label>
-              <Select value={model} onValueChange={setModel}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {LLM_MODELS.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          {/* Row 2: Occasion chips */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Occasion (optional)</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {OCCASION_PRESETS.map((o) => (
+            {/* Quick-select chips: Weather */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Weather</Label>
+              <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none -mx-1 px-1">
+                {WEATHER_PRESETS.map((w) => (
+                  <button
+                    key={w.id}
+                    type="button"
+                    onClick={() => setWeather(weather === w.id ? "" : w.id)}
+                    className={`cursor-pointer flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                      weather === w.id
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted active:scale-95"
+                    }`}
+                  >
+                    {w.icon} {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Advanced options — collapsed on mobile */}
+            <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+              <CollapsibleTrigger asChild>
                 <button
-                  key={o.id}
                   type="button"
-                  onClick={() => setOccasion(occasion === o.id ? "" : o.id)}
-                  className={`cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                    occasion === o.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
-                  }`}
+                  className="cursor-pointer flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {o.icon} {o.label}
+                  <Bot className="w-3 h-3" />
+                  <span>More options</span>
+                  <ChevronDown className="w-3 h-3 transition-transform [[data-state=open]>&]:rotate-180" />
                 </button>
-              ))}
-            </div>
-          </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="pt-2 grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Style
+                    </Label>
+                    <Select
+                      value={styleId || "none"}
+                      onValueChange={(v) => setStyleId(v === "none" ? "" : v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Any" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Any style</SelectItem>
+                        {styles.map((s) => (
+                          <SelectItem key={s._id} value={s._id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Outfits
+                    </Label>
+                    <Select
+                      value={String(numOutfits)}
+                      onValueChange={(v) => setNumOutfits(Number(v))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <SelectItem key={n} value={String(n)}>
+                            {n}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Model
+                    </Label>
+                    <Select value={model} onValueChange={setModel}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LLM_MODELS.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
-          {/* Row 3: Weather chips */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Weather (optional)</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {WEATHER_PRESETS.map((w) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  onClick={() => setWeather(weather === w.id ? "" : w.id)}
-                  className={`cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                    weather === w.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
-                  }`}
-                >
-                  {w.icon} {w.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Row 4: Outfits count + Submit */}
-          <div className="flex items-end gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Outfits</Label>
-              <Select
-                value={String(numOutfits)}
-                onValueChange={(v) => setNumOutfits(Number(v))}
-              >
-                <SelectTrigger className="h-9 w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Primary CTA — full width, prominent */}
             <Button
               onClick={handleSubmit}
-              disabled={disabled || mutation.isPending}
-              className="gap-2 flex-1"
+              disabled={disabled}
+              className="w-full gap-2 h-11"
+              size="lg"
             >
-              {mutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Styling...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4" />
-                  Style This Piece
-                </>
-              )}
+              <Wand2 className="w-4 h-4" />
+              Style This Piece
             </Button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Loading State */}
       <AnimatePresence>
@@ -295,45 +323,65 @@ export default function StylePieceSection({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="rounded-lg border bg-muted/30 p-6 text-center space-y-3"
+            className="rounded-xl border bg-muted/20 p-8 text-center space-y-4"
           >
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-            <p className="text-sm text-muted-foreground font-medium">
-              {LOADING_MESSAGES[loadingMsgIdx]}
-            </p>
+            <div className="relative w-12 h-12 mx-auto">
+              <Loader2 className="w-12 h-12 animate-spin text-primary/30" />
+              <Wand2 className="w-5 h-5 absolute inset-0 m-auto text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                {LOADING_MESSAGES[loadingMsgIdx]}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                This usually takes 15-30 seconds
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Results */}
-      {result && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          {/* Analyzed Item Summary */}
-          <AnalyzedItemCard item={result.analyzed_item} imageUrl={image} />
+      <AnimatePresence>
+        {result && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3"
+          >
+            {/* Analyzed Item Summary */}
+            <AnalyzedItemCard item={result.analyzed_item} imageUrl={image} />
 
-          {/* Generated Outfits */}
-          <div className="space-y-3">
-            {result.outfits.map((outfit, idx) => (
-              <OutfitResultCard
-                key={idx}
-                outfit={outfit}
-                analyzedItem={result.analyzed_item}
-                wardrobe={wardrobe}
-                onSave={() => handleSaveOutfit(outfit, result.analyzed_item)}
-              />
-            ))}
-          </div>
+            {/* Generated Outfits */}
+            <div className="space-y-3">
+              {result.outfits.map((outfit, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <OutfitResultCard
+                    outfit={outfit}
+                    analyzedItem={result.analyzed_item}
+                    wardrobe={wardrobe}
+                    onSave={() => handleSaveOutfit(outfit, result.analyzed_item)}
+                  />
+                </motion.div>
+              ))}
+            </div>
 
-          {/* Reset button */}
-          <Button variant="outline" onClick={handleClear} className="w-full">
-            Style Another Item
-          </Button>
-        </motion.div>
-      )}
+            <Button
+              variant="outline"
+              onClick={handleClear}
+              className="w-full gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Style Another Item
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -348,40 +396,39 @@ function AnalyzedItemCard({
   imageUrl: string | null;
 }) {
   return (
-    <div className="rounded-lg border bg-card p-4 flex gap-4">
-      {imageUrl && (
-        <img
-          src={imageUrl}
-          alt="Analyzed item"
-          className="w-20 h-20 rounded-md object-cover flex-shrink-0"
-        />
-      )}
-      <div className="flex-1 min-w-0 space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h4 className="font-semibold capitalize">{item.type}</h4>
-          <Badge variant="secondary" className="capitalize">
-            {item.category}
-          </Badge>
-          <Badge variant="outline" className="capitalize">
-            {item.fit}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">{item.description}</p>
-        <div className="flex items-center gap-3 flex-wrap text-xs">
-          {item.color_code && (
-            <span className="flex items-center gap-1">
-              <span
-                className="w-3 h-3 rounded-full border"
-                style={{ backgroundColor: item.color_code }}
-              />
-              {item.color}
-            </span>
-          )}
-          {item.material && (
-            <span className="text-muted-foreground capitalize">
-              {item.material}
-            </span>
-          )}
+    <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="flex items-start gap-3 p-3 sm:p-4">
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt="Analyzed item"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover flex-shrink-0"
+          />
+        )}
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h4 className="font-semibold capitalize text-sm sm:text-base">
+              {item.type}
+            </h4>
+            <Badge variant="secondary" className="capitalize text-[10px]">
+              {item.category}
+            </Badge>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+            {item.description}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap text-[11px] sm:text-xs text-muted-foreground">
+            {item.color_code && (
+              <span className="flex items-center gap-1 font-medium text-foreground">
+                <span
+                  className="w-2.5 h-2.5 rounded-full border inline-block"
+                  style={{ backgroundColor: item.color_code }}
+                />
+                {item.color}
+              </span>
+            )}
+            {item.material && <span className="capitalize">{item.material}</span>}
+          </div>
         </div>
       </div>
     </div>
@@ -404,31 +451,28 @@ function OutfitResultCard({
   const wardrobeMap = new Map(wardrobe.map((item) => [item._id, item]));
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          {outfit.name}
+          <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+          <span className="truncate">{outfit.name}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pb-2">
-        {/* Item chips */}
-        <div className="flex flex-wrap gap-2 mb-3">
+      <CardContent className="pb-2 px-3 sm:px-6">
+        {/* Item chips — horizontally scrollable on mobile */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
           {outfit.items.map((itemId, idx) => {
             if (itemId === "NEW_ITEM") {
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 px-2 py-1 rounded-md border-2 border-primary/40 bg-primary/5 text-xs"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 border-primary/30 bg-primary/5 text-xs whitespace-nowrap flex-shrink-0"
                 >
                   <Shirt className="w-4 h-4 text-primary" />
                   <span className="capitalize font-medium">
                     {analyzedItem.color} {analyzedItem.type}
                   </span>
-                  <Badge
-                    variant="default"
-                    className="text-[10px] px-1.5 py-0"
-                  >
+                  <Badge variant="default" className="text-[9px] px-1.5 py-0 h-4">
                     New
                   </Badge>
                 </div>
@@ -442,13 +486,18 @@ function OutfitResultCard({
 
         {/* Reasoning */}
         {outfit.ai_generated_reasoning && (
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed mt-2">
             {outfit.ai_generated_reasoning}
           </p>
         )}
       </CardContent>
-      <CardFooter className="pt-2">
-        <Button variant="outline" size="sm" onClick={onSave} className="gap-1.5">
+      <CardFooter className="pt-2 px-3 sm:px-6 pb-3 sm:pb-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSave}
+          className="gap-1.5 active:scale-95 transition-transform"
+        >
           <Save className="w-3.5 h-3.5" />
           Save Outfit
         </Button>
@@ -465,11 +514,11 @@ function WardrobeItemChip({ item }: { item: ClothingItem }) {
   const iconId = getEffectiveIconId(item.icon_id, item.category);
 
   return (
-    <div className="flex items-center gap-2 px-2 py-1 rounded-md border bg-card text-xs">
+    <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border bg-card text-xs whitespace-nowrap flex-shrink-0">
       <div className="w-5 h-5 flex-shrink-0">
         <ClothingIcon iconId={iconId || ""} colorHex={hex} />
       </div>
-      <span className="capitalize">
+      <span className="capitalize font-medium">
         {item.color} {item.type}
       </span>
     </div>
