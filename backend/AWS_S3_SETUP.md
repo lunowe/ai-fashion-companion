@@ -1,5 +1,10 @@
 # AWS S3 Configuration Guide
 
+> **Note:** FitFlow now runs on self-hosted MinIO on Railway. See
+> [`RAILWAY_MINIO_SETUP.md`](./RAILWAY_MINIO_SETUP.md) for the current setup. This
+> AWS guide is kept for reference — the code still supports AWS S3 when no custom
+> `S3_ENDPOINT_URL` is configured.
+
 ## Required Environment Variables
 
 Add the following to your `.env` file:

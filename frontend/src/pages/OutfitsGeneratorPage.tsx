@@ -200,7 +200,9 @@ export default function OutfitGeneratorPage() {
       weather: formData.weather,
       description: formData.description,
       required_items: formData.required_items,
+      exclude_items: formData.exclude_items,
       num_outfits: formData.num_outfits,
+      model: formData.model,
     };
 
     return await genMut.mutateAsync(request);

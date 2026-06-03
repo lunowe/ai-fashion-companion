@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from config import settings
 from routes import clothing, style, outfit, user_profile, auth, images, catalog, colors, categories, travel_suitcase, item_analysis
 from middleware.auth_refresh import TokenRefreshMiddleware
+from utils.s3_service import s3_service
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,6 +15,11 @@ async def lifespan(app: FastAPI):
     app.mongodb_client = AsyncIOMotorClient(settings.MONGODB_URL)
     app.mongodb = app.mongodb_client[settings.DB_NAME]
     print("Connected to MongoDB!")
+    # Ensure the object-storage bucket exists (creates it on fresh MinIO instances)
+    try:
+        s3_service.ensure_bucket()
+    except Exception as e:
+        print(f"Warning: could not ensure storage bucket exists: {e}")
     yield
     # Close the MongoDB connection
     app.mongodb_client.close()

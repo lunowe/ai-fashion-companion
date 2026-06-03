@@ -11,24 +11,82 @@ class S3Service:
     """Service for handling AWS S3 uploads and operations with pre-signed URLs."""
     
     def __init__(self):
-        """Initialize S3 client with credentials from settings."""
+        """Initialize S3 client(s) with credentials from settings.
+
+        Works against AWS S3 (no endpoint configured) or any S3-compatible
+        service such as self-hosted MinIO (S3_ENDPOINT_URL set).
+        """
         from botocore.config import Config
-        
-        # Configure to use regional endpoint (required for pre-signed URLs)
+
+        self.bucket_name = settings.S3_BUCKET_NAME
+        self.endpoint_url = settings.S3_ENDPOINT_URL or None
+        # Endpoint used when signing pre-signed URLs. Must be reachable from the
+        # browser; falls back to the server-side endpoint, then to AWS.
+        self.public_endpoint_url = (
+            settings.S3_PUBLIC_ENDPOINT_URL or settings.S3_ENDPOINT_URL or None
+        )
+
+        # AWS uses virtual-hosted addressing; self-hosted MinIO behind a single
+        # (non-wildcard) domain needs path-style addressing.
+        addressing_style = 'path' if self.endpoint_url else 'virtual'
         config = Config(
             signature_version='s3v4',
-            s3={'addressing_style': 'virtual'}
+            s3={'addressing_style': addressing_style}
         )
-        
-        self.s3_client = boto3.client(
-            's3',
+
+        common = dict(
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             region_name=settings.AWS_REGION,
-            config=config
+            config=config,
         )
-        self.bucket_name = settings.S3_BUCKET_NAME
-        
+
+        # Server-side client: handles put/get/delete. On Railway this should point
+        # at the private network endpoint (free, fast egress).
+        self.s3_client = boto3.client('s3', endpoint_url=self.endpoint_url, **common)
+
+        # Signing client: pre-signed URLs are signed against this host so the
+        # browser can fetch them. generate_presigned_url() makes no network call,
+        # so pointing this at the public endpoint costs nothing.
+        if self.public_endpoint_url and self.public_endpoint_url != self.endpoint_url:
+            self.s3_public_client = boto3.client(
+                's3', endpoint_url=self.public_endpoint_url, **common
+            )
+        else:
+            self.s3_public_client = self.s3_client
+
+    def ensure_bucket(self) -> None:
+        """Create the configured bucket if it doesn't exist (idempotent).
+
+        Needed for fresh MinIO instances, which start with no buckets. On AWS
+        this is effectively a no-op since the bucket already exists.
+        """
+        if not self.bucket_name:
+            return
+        try:
+            self.s3_client.head_bucket(Bucket=self.bucket_name)
+            return
+        except ClientError as e:
+            code = e.response.get('Error', {}).get('Code', '')
+            if code not in ('404', '403', 'NoSuchBucket'):
+                raise
+
+        try:
+            if self.endpoint_url is None and settings.AWS_REGION != 'us-east-1':
+                # AWS requires a location constraint outside us-east-1
+                self.s3_client.create_bucket(
+                    Bucket=self.bucket_name,
+                    CreateBucketConfiguration={'LocationConstraint': settings.AWS_REGION},
+                )
+            else:
+                self.s3_client.create_bucket(Bucket=self.bucket_name)
+            print(f"Created bucket: {self.bucket_name}")
+        except ClientError as e:
+            code = e.response.get('Error', {}).get('Code', '')
+            if code in ('BucketAlreadyOwnedByYou', 'BucketAlreadyExists'):
+                return
+            raise
+
     def _get_content_type(self, extension: str) -> str:
         """Get MIME type based on file extension."""
         content_types = {
@@ -148,7 +206,7 @@ class S3Service:
             expiration = settings.PRESIGNED_URL_EXPIRATION
             
         try:
-            url = self.s3_client.generate_presigned_url(
+            url = self.s3_public_client.generate_presigned_url(
                 'get_object',
                 Params={
                     'Bucket': self.bucket_name,

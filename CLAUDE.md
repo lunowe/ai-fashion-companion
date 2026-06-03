@@ -92,6 +92,8 @@ Use `@/` path alias. UI primitives in `components/ui/`, feature components at `c
 **Backend (.env)**:
 `MONGODB_URL`, `DATABASE_NAME`, `SECRET_KEY`, `GOOGLE_GENAI_API_KEY`, `OPENROUTER_API_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `AWS_REGION`
 
+Storage is S3-compatible. Self-hosted MinIO on Railway (current setup) adds `S3_ENDPOINT_URL` (server-side, private network) and `S3_PUBLIC_ENDPOINT_URL` (browser-reachable, used to sign pre-signed URLs). Leaving both unset falls back to AWS S3. See `backend/RAILWAY_MINIO_SETUP.md`.
+
 **Frontend (.env.local)**:
 `VITE_API_BASE_URL` (defaults to `http://localhost:8000`)
 
